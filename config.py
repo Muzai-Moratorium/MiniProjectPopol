@@ -9,9 +9,10 @@ class Config:
 
 
 # Flask-Security 기본 설정
-    SECURITY_REGISTERABLE = True        # 회원가입 ON
+    SECURITY_REGISTERABLE = False       # 회원가입 off 커스텀 회원가입 이용
     SECURITY_SEND_REGISTER_EMAIL = False # 이메일 인증 비활성화
     SECURITY_PASSWORD_HASH = "bcrypt"
     SECURITY_LOGIN_URL = "/login"
     SECURITY_POST_LOGIN_VIEW = "/auth/redirect"
     SECURITY_POST_LOGOUT_VIEW = "/"
+    SECURITY_RECOVERABLE = True

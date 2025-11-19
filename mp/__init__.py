@@ -4,6 +4,7 @@ from .models import db, User, Role
 from .views.auth import bp as auth_bp
 from .views.index import bp as index
 from config import Config
+from datetime import date
 
 def create_app():
     app = Flask(__name__)
@@ -32,10 +33,14 @@ def create_app():
 
         # 관리자 계정 기본 생성
         admin_email = "admin@admin.com"
+        admin_name = "주인장"
         if not User.query.filter_by(email=admin_email).first():
             user_datastore.create_user(
+                name = admin_name,
                 email=admin_email,
                 password="1234",  # SECURITY_PASSWORD_HASH에 맞게 암호화
+                birth=date(1990, 1, 1),   # 🔥 여기에 날짜 넣기
+                mobile="01000000000",     # 🔥 mobile도 NOT NULL이라 필요
                 roles=[admin_role]
             )
             db.session.commit()
