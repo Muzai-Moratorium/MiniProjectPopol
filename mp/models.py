@@ -19,6 +19,9 @@ class Role(db.Model, RoleMixin):
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True)
+    name = db.Column(db.String(20),nullable=False)
+    birth = db.Column(db.Date, nullable = False)
+    mobile = db.Column(db.String(20),unique=True,nullable=False)
     password = db.Column(db.String(255))
     active = db.Column(db.Boolean())
     fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
