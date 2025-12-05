@@ -7,6 +7,7 @@
     <title>회원가입</title>
   </head>
   <body>
+    {% extends "layout.html" %} {% block content %}
     <h2>회원가입</h2>
     {% with messages = get_flashed_messages() %} {% if messages %}
     <ul style="color: red">
@@ -81,7 +82,7 @@
       </ul>
       <button type="submit">가입</button>
     </form>
-
+    {% endblock %}
     <script>
       const form = document.getElementById("registerForm");
       const password = document.getElementById("password");

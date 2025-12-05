@@ -1,0 +1,7 @@
+#map {
+  padding: 20px;
+  background: #eae9e9;
+  min-height: 100vh;
+  box-shadow: 0 0 1px;
+  transition: 1;
+}

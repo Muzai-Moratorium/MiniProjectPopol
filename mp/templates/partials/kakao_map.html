@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>kakao map</title>
+</head>
+<body>
+      <div id="map"></div>
+    </div>
+    <!-- 카카오맵 JS SDK -->
+    <script
+      type="text/javascript"
+      src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=453cf90a4b340fce52c05b0d3fb5f7a6"
+    ></script>
+    <script>
+      var mapContainer = document.getElementById("map"), // 지도를 표시할 div
+        mapOption = {
+          center: new kakao.maps.LatLng(37.57011, 126.99296), // 지도의 중심좌표
+          level: 3, // 지도의 확대 레벨
+          mapTypeId: kakao.maps.MapTypeId.HYBRID, // 지도종류
+        };
+
+      // 지도를 생성한다
+      var map = new kakao.maps.Map(mapContainer, mapOption);
+
+      // 실시간교통 타일 이미지 추가
+      map.addOverlayMapTypeId(kakao.maps.MapTypeId.TRAFFIC);
+
+      // 지도 타입 변경 컨트롤을 생성한다
+      var mapTypeControl = new kakao.maps.MapTypeControl();
+
+      // 지도의 상단 우측에 지도 타입 변경 컨트롤을 추가한다
+      map.addControl(mapTypeControl, kakao.maps.ControlPosition.TOPRIGHT);
+
+      // 지도에 확대 축소 컨트롤을 생성한다
+      var zoomControl = new kakao.maps.ZoomControl();
+
+      // 지도의 우측에 확대 축소 컨트롤을 추가한다
+      map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
+
+      // 지도 중심 좌표 변화 이벤트를 등록한다
+      kakao.maps.event.addListener(map, "center_changed", function () {
+        console.log(
+          "지도의 중심 좌표는 " + map.getCenter().toString() + " 입니다."
+        );
+      });
+
+      // 지도 확대 레벨 변화 이벤트를 등록한다
+      kakao.maps.event.addListener(map, "zoom_changed", function () {
+        console.log(
+          "지도의 현재 확대레벨은 " + map.getLevel() + "레벨 입니다."
+        );
+      });
+
+      // 지도 영역 변화 이벤트를 등록한다
+      kakao.maps.event.addListener(map, "bounds_changed", function () {
+        var mapBounds = map.getBounds(),
+          message =
+            "지도의 남서쪽, 북동쪽 영역좌표는 " +
+            mapBounds.toString() +
+            "입니다.";
+
+        console.log(message);
+      });
+    </script>
+</body>
+</html>
