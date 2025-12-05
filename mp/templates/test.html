@@ -12,12 +12,17 @@
       href="{{ url_for('static', filename='css/main_bass.css') }}"
     />
 
-    <title>메인페이지</title>
+    <title>Document</title>
   </head>
   <body>
     {% extends "layout.html" %} {% block content %}
-    <div class="main-content">
-      <a href="{{ url_for('test.test_page') }}">테스트 페이지로</a>
+      <div class="main-content">
+        <div ></div>
+        <div class="map">
+          <a href="/">홈으로</a>
+        </div>
+      </div>
+    </div>
     {% endblock %}
   </body>
 </html>

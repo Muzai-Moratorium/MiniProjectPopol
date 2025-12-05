@@ -1,8 +1,9 @@
 from flask import Flask
 from flask_security import Security, SQLAlchemyUserDatastore
-from .models import db, User, Role
-from .views.auth import bp as auth_bp
-from .views.index import bp as index
+from mp.models import db, User, Role
+from mp.views.auth import bp as auth_bp
+from mp.views.index import bp as index
+from mp.views.test import bp as test_bp
 from config import Config
 from datetime import date
 
@@ -21,6 +22,7 @@ def create_app():
     # 블루프린트 등록
     app.register_blueprint(auth_bp)
     app.register_blueprint(index)
+    app.register_blueprint(test_bp)
 
     with app.app_context():
         db.create_all()
