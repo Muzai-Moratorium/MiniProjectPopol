@@ -1,11 +1,44 @@
-from flask import Blueprint, redirect, url_for, render_template, request,flash
+from flask import Blueprint, redirect, url_for, render_template, request, flash, jsonify
 from flask_security import current_user, login_required, roles_required, hash_password
+from flask_security.utils import verify_password, login_user
 from datetime import date
-from ..models import db,User
+from mp.models import db, User
+
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
-# 회원가입
+# 🆕 모달 로그인 엔드포인트 (JSON 응답)
+@bp.route("/login_modal", methods=["POST"])
+def login_modal():
+    email = request.form.get("email")
+    password = request.form.get("password")
+    remember = request.form.get("remember") == "on"
+    
+    # 사용자 조회
+    user = User.query.filter_by(email=email).first()
+    
+    # 사용자 존재 여부 및 비밀번호 확인
+    if user and verify_password(password, user.password):
+        # 로그인 처리
+        login_user(user, remember=remember)
+        
+        # 권한에 따라 리다이렉트 URL 결정
+        if user.has_role('admin'):
+            redirect_url = url_for('auth.admin_dashboard')
+        else:
+            redirect_url = url_for('auth.user_profile')
+        
+        return jsonify({
+            'success': True,
+            'redirect_url': redirect_url
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'message': '이메일 또는 비밀번호가 올바르지 않습니다.'
+        }), 401
 
+
+# 회원가입
 @bp.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -56,6 +89,7 @@ def register():
     # GET 요청일 경우 템플릿 렌더링
     return render_template("auth/register.html")
 
+
 # 🔐 로그인 후 이동할 기본 페이지
 @bp.route('/user')
 @login_required
@@ -67,10 +101,10 @@ def user_profile():
 @bp.route('/admin')
 @roles_required('admin')
 def admin_dashboard():
-    return render_template("auth/admin_dashboard.html",user=current_user)
+    return render_template("auth/admin_dashboard.html", user=current_user)
 
 
-#  로그인 후 권한에 따라 자동 분기
+# 로그인 후 권한에 따라 자동 분기
 @bp.route('/redirect')
 @login_required
 def redirect_by_role():
