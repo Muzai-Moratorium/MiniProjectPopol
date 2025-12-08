@@ -4,5 +4,5 @@ bp = Blueprint("index",__name__, url_prefix="/")
 
 @bp.route('/')
 def index():
-    return render_template("index.html")
+    return render_template("index.html",if_show_kakao_map=True)
 

@@ -1,8 +1,5 @@
 .footer {
   height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   padding: 20px;
   position: fixed;
   bottom: 0;
@@ -11,4 +8,16 @@
   background: #ffffff;
   backdrop-filter: blur(30px);
   z-index: 50;
+  box-shadow: 0 0 1px;
+}
+
+.footer ul {
+  display: flex;
+  justify-content: right;
+  align-items: center;
+  gap: 15px;
+}
+
+.footer ul li:hover {
+  color: aqua;
 }

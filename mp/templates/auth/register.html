@@ -10,7 +10,7 @@
     {% extends "layout.html" %} {% block content %}
     <h2>회원가입</h2>
     {% with messages = get_flashed_messages() %} {% if messages %}
-    <ul style="color: red">
+    <ul>
       {% for message in messages %}
       <li>{{ message }}</li>
       {% endfor %}

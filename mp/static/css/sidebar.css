@@ -163,6 +163,13 @@ li.active > .sub-menu {
   max-height: 300px;
 }
 
+.owl_head a {
+  text-decoration: none;
+  font-size: 30px;
+  color: #fff;
+  margin: 0px 15px;
+}
+
 #login-open-btn,
 #logout-open-btn {
   width: 100%;

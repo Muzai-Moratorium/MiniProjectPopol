@@ -44,9 +44,9 @@
     <div class="container">
       {% include "partials/sidebar.html" %} {% include "partials/header.html" %}
       {% include "partials/footer.html" %} {% if show_map_toggle_modal %} {%
-      include "modal/map_toggle_modal.html" %} {% endif %} {% if show_kakao_map
-      %} {% include "partials/kakao_map.html" %} {% endif %} {% include
-      "modal/login_modal.html" %}
+      include "modal/map_toggle_modal.html" %} {% endif %} {% if
+      if_show_kakao_map %} {% include "partials/kakao_map.html" %} {% endif %}
+      {% include "modal/login_modal.html" %}
       <main class="main">{% block content %}{% endblock %}</main>
     </div>
     <script>

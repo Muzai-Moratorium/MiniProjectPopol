@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link
       rel="stylesheet"
-      href="{{ url_for('static', filename='css/index.css') }}"
-    />
-    <link
-      rel="stylesheet"
       href="{{ url_for('static', filename='css/main_bass.css') }}"
     />
 
@@ -16,12 +12,21 @@
   </head>
   <body>
     {% extends "layout.html" %} {% block content %}
-      <div class="main-content">
-        <div ></div>
-        <div class="map">
-          <a href="/">홈으로</a>
-        </div>
-      </div>
+    <div class="main-content">
+      <ul>
+        <li>테스트1</li>
+        <li>테스트2</li>
+        <li>테스트3</li>
+        <li>테스트4</li>
+      </ul>
+    </div>
+    <div class="sub">
+      <ul>
+        <li><a href="#">메뉴1</a></li>
+        <li><a href="#">메뉴2</a></li>
+        <li><a href="#">메뉴3</a></li>
+        <li><a href="#">메뉴4</a></li>
+      </ul>
     </div>
     {% endblock %}
   </body>
