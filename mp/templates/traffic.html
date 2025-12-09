@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>경부선 실시간 교통량 분석</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f4f7f6; }
+        .container { max-width: 1200px; }
+        .video-box { box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); }
+    </style>
+</head>
+<body class="p-8">
+    <div class="container mx-auto">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">🛣️ 경부선 실시간 CCTV 교통 분석 (Flask)</h1>
+        
+        <!-- form action을 새로운 Blueprint 엔드포인트(traffic_analysis.index)로 명시적으로 변경 -->
+        <form method="POST" action="{{ url_for('traffic.index') }}" class="flex items-center space-x-4 mb-8 bg-white p-4 rounded-lg shadow-md">
+            <label for="cctv_select" class="text-lg font-medium text-gray-700">CCTV 선택:</label>
+            <select id="cctv_select" name="cctv_name" class="flex-grow p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                {% for name in cctv_names %}
+                    <option value="{{ name }}" {% if name == target_name %}selected{% endif %}>
+                        {{ name }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-150">
+                분석 시작
+            </button>
+        </form>
+
+        {% if target_name and target_url %}
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+                현재 분석 중: <span class="text-blue-600">{{ target_name }}</span>
+            </h2>
+            <div class="video-box rounded-lg overflow-hidden border-4 border-gray-300">
+                <!-- img 태그의 src는 video_feed 엔드포인트를 그대로 사용합니다. -->
+                <!-- URL을 안전하게 인코딩하여 전달합니다. -->
+                <img src="{{ url_for('traffic.video_feed', cctv_url=target_url | urlencode) }}" 
+                     alt="실시간 교통량 분석 스트림" 
+                     class="w-full h-auto object-cover" 
+                     onerror="this.onerror=null; this.src='https://placehold.co/1280x720/E5E7EB/4B5563?text=스트림+로딩+중+또는+연결+실패';"
+                >
+            </div>
+            <p class="mt-4 text-sm text-gray-600">
+                * 화면 좌측 상단의 "방향 1/2"는 영상의 흐름 방향(일반적으로 화면 아래로 내려가는 방향이 Downstream)에 따른 교통 상태를 표시합니다.
+            </p>
+        {% else %}
+            <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg" role="alert">
+                <p class="font-bold">CCTV 데이터를 찾을 수 없습니다.</p>
+                <p>API 연결 상태를 확인하거나, CCTV 목록을 먼저 선택해주세요.</p>
+            </div>
+        {% endif %}
+    </div>
+
+</body>
+</html>
