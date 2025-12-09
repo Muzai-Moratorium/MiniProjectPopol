@@ -4,6 +4,7 @@ from mp.models import db, User, Role
 from mp.views.auth import bp as auth_bp
 from mp.views.index import bp as index
 from mp.views.test import bp as test_bp
+from mp.views.cctv import bp as traffic_bp
 from config import Config
 from datetime import date
 
@@ -23,6 +24,7 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(index)
     app.register_blueprint(test_bp)
+    app.register_blueprint(traffic_bp)
 
     with app.app_context():
         db.create_all()
