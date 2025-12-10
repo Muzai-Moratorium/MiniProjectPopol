@@ -260,7 +260,7 @@ def generate_frames(cctv_url):
 # ----------------------------------------------------------------------
 
 
-@bp.route('/cctv', methods=['GET', 'POST'])
+@bp.route('/', methods=['GET', 'POST'])  # '/cctv' -> '/' 변경
 def index():
     initialize_cctv_data()
 
