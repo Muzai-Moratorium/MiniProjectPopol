@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CCTV 모달창</title>
+  </head>
+  <body>
+    <script type="text/template" id="cctv-widget-template">
+      <div class="cctv-widget">
+        <div class="cctv-widget-header">
+          <div class="cctv-widget-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+            <span>CCTV 교통량 분석</span>
+          </div>
+          <div class="cctv-widget-controls">
+            <button class="cctv-toggle-btn cctv-control-btn" title="접기/펼치기">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="18 15 12 9 6 15"></polyline>
+              </svg>
+            </button>
+            <button class="cctv-close-btn cctv-control-btn" title="닫기">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="cctv-widget-body">
+          <div class="cctv-selector-section">
+            <div class="cctv-selector-header">
+              <label class="cctv-selector-label">CCTV 선택</label>
+              <select class="cctv-selector">
+                <option value="">CCTV를 선택하세요</option>
+                {% for name in cctv_names %}
+                <option value="{{ name }}">{{ name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <button class="cctv-start-btn cctv-widget-start-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              분석 시작
+            </button>
+          </div>
+          <div class="cctv-widget-video-area" style="display:none;">
+            <div class="cctv-widget-video-info">
+              <span class="cctv-status-badge">실시간</span>
+              <span class="cctv-current-name">-</span>
+            </div>
+            <div class="cctv-widget-video-wrapper">
+              <img class="cctv-widget-stream-img"
+                src=""
+                alt="실시간 교통량 분석"
+                onerror="this.onerror=null; this.src='https://placehold.co/640x360/E5E7EB/4B5563?text=연결+대기+중';"
+              />
+            </div>
+            <div class="cctv-widget-actions">
+              <button class="cctv-stop-btn cctv-widget-stop-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="6" width="12" height="12"></rect>
+                </svg>
+                중지
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </script>
+
+    <!-- 이미지 확대 오버레이 - 새로 추가된 부분 -->
+    <div class="image-zoom-overlay" id="imageZoomOverlay">
+      <button class="zoom-close-btn">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+      <img id="zoomedImage" src="" alt="확대된 이미지" />
+    </div>
+    <!-- 이미지 확대 오버레이 - 새로 추가된 부분 -->
+
+    <script>
+      let widgetCount = 0;
+
+      // 이미지 확대/닫기 함수 - 새로 추가된 부분
+      const zoomOverlay = document.getElementById("imageZoomOverlay");
+      const zoomedImage = document.getElementById("zoomedImage");
+
+      function showZoomedImage(imgSrc) {
+        zoomedImage.src = imgSrc;
+        zoomOverlay.classList.add("active");
+        document.body.style.overflow = "hidden";
+      }
+
+      function hideZoomedImage() {
+        zoomOverlay.classList.remove("active");
+        document.body.style.overflow = "";
+      }
+
+      zoomOverlay.addEventListener("click", (e) => {
+        if (e.target === zoomOverlay || e.target.closest(".zoom-close-btn")) {
+          hideZoomedImage();
+        }
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && zoomOverlay.classList.contains("active")) {
+          hideZoomedImage();
+        }
+      });
+
+      function openCCTVModal() {
+        widgetCount += 1;
+
+        const template = document.getElementById(
+          "cctv-widget-template"
+        ).innerHTML;
+        const wrap = document.createElement("div");
+        wrap.innerHTML = template;
+        const widget = wrap.firstElementChild;
+
+        document.body.appendChild(widget);
+        widget.classList.add("show");
+
+        let selectedName = "";
+        let isAnalyzing = false;
+
+        const selector = widget.querySelector(".cctv-selector");
+        const startBtn = widget.querySelector(".cctv-start-btn");
+        const stopBtn = widget.querySelector(".cctv-stop-btn");
+        const closeBtn = widget.querySelector(".cctv-close-btn");
+        const toggleBtn = widget.querySelector(".cctv-toggle-btn");
+        const videoArea = widget.querySelector(".cctv-widget-video-area");
+        const selectorArea = widget.querySelector(".cctv-selector-section");
+        const streamImg = widget.querySelector(".cctv-widget-stream-img");
+        const currentNameSpan = widget.querySelector(".cctv-current-name");
+
+        // CCTV 선택
+        selector.addEventListener("change", (e) => {
+          selectedName = e.target.value;
+        });
+
+        // 닫기
+        closeBtn.addEventListener("click", () => widget.remove());
+
+        // 접기/펼치기
+        toggleBtn.addEventListener("click", () => {
+          widget.classList.toggle("collapsed");
+        });
+
+        // 이미지 클릭 시 확대 - 새로 추가된 부분
+        streamImg.addEventListener("click", () => {
+          if (streamImg.src && !streamImg.src.includes("placehold.co")) {
+            showZoomedImage(streamImg.src);
+          }
+        });
+
+        // 분석 시작
+        startBtn.addEventListener("click", async () => {
+          if (!selectedName) return alert("CCTV를 선택하세요.");
+
+          startBtn.disabled = true;
+          startBtn.textContent = "연결 중...";
+
+          try {
+            const formData = new FormData();
+            formData.append("cctv_name", selectedName);
+
+            const response = await fetch("{{ url_for('traffic.index') }}", {
+              method: "POST",
+              body: formData,
+            });
+
+            const html = await response.text();
+            const doc = new DOMParser().parseFromString(html, "text/html");
+            const img = doc.querySelector(
+              'img[alt="실시간 교통량 분석 스트림"]'
+            );
+
+            if (img && img.src) {
+              videoArea.style.display = "block";
+              selectorArea.style.display = "none";
+              currentNameSpan.textContent = selectedName;
+              streamImg.src = img.src;
+              isAnalyzing = true;
+            }
+          } finally {
+            startBtn.disabled = false;
+            startBtn.textContent = "분석 시작";
+          }
+        });
+
+        // 중지
+        stopBtn.addEventListener("click", () => {
+          videoArea.style.display = "none";
+          selectorArea.style.display = "block";
+          streamImg.src = "";
+          isAnalyzing = false;
+        });
+
+        // 드래그
+        let dragging = false;
+        let offsetX, offsetY;
+        const header = widget.querySelector(".cctv-widget-header");
+
+        header.addEventListener("mousedown", (e) => {
+          if (e.target.closest(".cctv-control-btn")) return;
+          dragging = true;
+          offsetX = e.clientX - widget.offsetLeft;
+          offsetY = e.clientY - widget.offsetTop;
+          widget.classList.add("dragging");
+        });
+
+        document.addEventListener("mousemove", (e) => {
+          if (!dragging) return;
+          widget.style.left = `${e.clientX - offsetX}px`;
+          widget.style.top = `${e.clientY - offsetY}px`;
+        });
+
+        document.addEventListener("mouseup", () => {
+          dragging = false;
+          widget.classList.remove("dragging");
+        });
+      }
+    </script>
+  </body>
+</html>
