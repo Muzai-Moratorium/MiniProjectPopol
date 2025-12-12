@@ -5,3 +5,35 @@
   box-shadow: 0 0 1px;
   transition: 1;
 }
+
+#status-panel {
+  position: absolute;
+  bottom: 50px;
+  left: 88%;
+  background: rgba(255, 255, 255, 0.897);
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 0px 3px rgba(0, 0, 0);
+  z-index: 1000;
+}
+#status-panel h3 {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin: 5px 0;
+  font-size: 13px;
+}
+.legend-color {
+  width: 30px;
+  height: 4px;
+  margin-right: 8px;
+  border-radius: 2px;
+}
+#last-update {
+  margin-top: 10px;
+  font-size: 11px;
+  color: #666;
+}

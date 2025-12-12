@@ -21,3 +21,10 @@
 .footer ul li:hover {
   color: aqua;
 }
+
+.weather-widget-ft {
+  display: flex;
+  justify-content: right;
+  align-items: center;
+  gap: 15px;
+}

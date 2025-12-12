@@ -122,7 +122,8 @@
         }
       });
 
-      function openCCTVModal() {
+      function openCCTVModal(cctvName) {
+        // 파라미터 추가
         widgetCount += 1;
 
         const template = document.getElementById(
@@ -135,7 +136,7 @@
         document.body.appendChild(widget);
         widget.classList.add("show");
 
-        let selectedName = "";
+        let selectedName = cctvName || ""; // 전달받은 CCTV 이름 사용
         let isAnalyzing = false;
 
         const selector = widget.querySelector(".cctv-selector");
@@ -147,6 +148,13 @@
         const selectorArea = widget.querySelector(".cctv-selector-section");
         const streamImg = widget.querySelector(".cctv-widget-stream-img");
         const currentNameSpan = widget.querySelector(".cctv-current-name");
+
+        // CCTV 이름이 전달되었으면 자동 선택
+        if (cctvName) {
+          selector.value = cctvName;
+          // 자동으로 분석 시작
+          setTimeout(() => startBtn.click(), 100);
+        }
 
         // CCTV 선택
         selector.addEventListener("change", (e) => {
