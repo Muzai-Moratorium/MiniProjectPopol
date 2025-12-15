@@ -5,7 +5,6 @@
   align-items: center;
   justify-content: right;
   padding: 0 20px;
-  gap: 50px;
 }
 
 .search {
@@ -53,19 +52,4 @@
 .search-btn:hover {
   color: rgb(156, 156, 156);
   transition: 0.5s;
-}
-
-#open_cctv_btn {
-  border: none;
-  background-color: royalblue;
-  color: white;
-  padding: 10px 20px;
-  cursor: pointer;
-  border-radius: 30px;
-  box-shadow: 0 0 1px black;
-}
-
-#open_cctv_btn:hover {
-  box-shadow: 0 0 3px black;
-  transition: 0.3s;
 }
