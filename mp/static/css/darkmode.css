@@ -1,0 +1,139 @@
+/* ===== CSS 변수 정의 ===== */
+:root {
+  --bg-color: #ffffff;
+  --text-color: #000000;
+  --header-bg: #ffffff;
+  --footer-bg: #f8f9fa;
+  --border-color: #dee2e6;
+  --input-bg: #ffffff;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --hover-bg: #f1f3f5;
+  --icon-color: #495057;
+}
+
+body.dark-mode {
+  --bg-color: #1a1a1a;
+  --text-color: #e9ecef;
+  --header-bg: #2d2d2d;
+  --footer-bg: #2d2d2d;
+  --input-bg: #1a1a1a;
+  --input-color: #e9ecef;
+  --shadow: rgba(255, 255, 255, 0.1);
+  --hover-bg: #495057;
+  --icon-color: #e9ecef;
+}
+
+/* ===== body 전체 ===== */
+body {
+  background-color: var(--bg-color) !important;
+  color: var(--text-color) !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 다크모드에서만 a 태그 색상 변경 */
+body.dark-mode a {
+  color: #e9ecef !important;
+}
+
+/* 버튼 스타일 a는 제외 */
+body.dark-mode a.button,
+body.dark-mode .btn {
+  color: inherit !important; /* 버튼은 원래 색상 유지 */
+}
+
+/* ===== 헤더 ===== */
+.header {
+  background-color: var(--header-bg) !important;
+  transition: background-color 0.3s ease;
+}
+
+/* ===== 검색창 ===== */
+.search {
+  background-color: var(--input-bg) !important;
+  transition: background-color 0.3s ease;
+}
+
+.search input {
+  background-color: var(--input-bg) !important;
+  color: var(--text-color) !important;
+  transition: all 0.3s ease;
+}
+
+.search input::placeholder {
+  color: var(--text-color) !important;
+  opacity: 0.8;
+  transition: color 0.3s ease;
+}
+
+.search-btn {
+  color: var(--text-color) !important;
+}
+
+/* ===== 푸터 ===== */
+.footer {
+  background-color: var(--footer-bg) !important;
+  transition: background-color 0.3s ease;
+}
+
+/* ===== 모달 다크모드 ===== */
+.login-modal {
+  background-color: var(--bg-color) !important;
+  color: var(--text-color) !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.login-modal input {
+  background-color: var(--input-bg) !important;
+  color: var(--text-color) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.login-modal input::placeholder {
+  color: var(--placeholder-color) !important;
+  opacity: 0.7;
+}
+
+.login-modal button {
+  background-color: var(--header-bg) !important;
+  color: var(--text-color) !important;
+}
+
+/* ===== 사이드바 다크모드 ===== */
+.sidebar {
+  background-color: var(--header-bg) !important;
+  color: var(--text-color) !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.sidebar a {
+  color: var(--text-color) !important;
+}
+
+.sidebar a:hover {
+  background-color: var(--hover-bg) !important;
+}
+
+.sidebar .active {
+  background-color: var(--hover-bg) !important;
+}
+
+/* ===== 다크모드 토글 버튼 ===== */
+.dark-mode-toggle {
+  background: none;
+  border: 2px solid var(--border-color);
+  border-radius: 20px;
+  padding: 8px 16px;
+  margin-left: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-color) !important;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.dark-mode-toggle:hover {
+  background-color: var(--hover-bg);
+  transform: scale(1.05);
+}
