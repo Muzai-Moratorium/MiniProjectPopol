@@ -16,6 +16,7 @@
   justify-content: right;
   align-items: center;
   gap: 15px;
+  margin-bottom: 8px;
 }
 
 .footer ul li:hover {

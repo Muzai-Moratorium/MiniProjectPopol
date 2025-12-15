@@ -39,8 +39,8 @@
           ></a>
           <ul class="sub-menu">
             <li><a href="{{ url_for('auth.admin_dashboard') }}">관리자</a></li>
-            <li><a href="#">개발자</a></li>
-            <li><a href="#">고객</a></li>
+
+            <li><a href="{{ url_for('auth.user_profile')}}">고객</a></li>
           </ul>
         </li>
         <li class="nav-item">
