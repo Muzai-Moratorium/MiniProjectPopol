@@ -37,6 +37,10 @@ h2 {
   transition: color 0.3s ease;
 }
 
+.accessionButton button {
+  cursor: pointer;
+}
+
 .idForm,
 .emailForm,
 .pwForm,

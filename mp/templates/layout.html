@@ -39,7 +39,10 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/login_modal.css') }}"
     />
-
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/cctv_analysis_modal.css') }}"
+    />
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='css/darkmode.css') }}"
@@ -49,9 +52,11 @@
     <div class="container">
       {% include "partials/sidebar.html" %} {% include "partials/header.html" %}
       {% include "partials/footer.html" %} {% if show_map_toggle_modal %} {%
-      include "modal/map_toggle_modal.html" %} {% endif %} {% if show_kakao_map
-      %} {% include "partials/kakao_map.html" %} {% endif %} {% include
-      "modal/login_modal.html" %}
+      include "modal/map_toggle_modal.html" %} {% endif %} {% if
+      if_show_kakao_map %} {% include "partials/kakao_map.html" %} {% endif %}
+      {% include "modal/login_modal.html" %} {% include
+      "modal/cctv_analysis_modal.html" %}
+
       <main class="main">{% block content %}{% endblock %}</main>
     </div>
     <script>
@@ -71,7 +76,6 @@
         });
       }
     </script>
-
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="{{ url_for('static', filename='js/darkmode.js') }}"></script>
   </body>

@@ -6,6 +6,7 @@ from mp.views.auth import bp as auth_bp
 from mp.views.index import bp as index
 from mp.views.test import bp as test_bp
 from mp.views.cctv import bp as traffic_bp
+from mp.views.weather import bp as weather_bp
 from config import Config
 from datetime import date
 
@@ -33,6 +34,7 @@ def create_app():
     app.register_blueprint(index)
     app.register_blueprint(test_bp)
     app.register_blueprint(traffic_bp)
+    app.register_blueprint(weather_bp, url_prefix='/api')
 
     # DB 생성 및 기본 데이터 등록
     with app.app_context():

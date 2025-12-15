@@ -17,7 +17,7 @@
 }
 
 .owl_head {
-  text-align: center;
+  text-align: left;
   font-size: 25px;
 }
 
@@ -163,6 +163,13 @@ li.active > .sub-menu {
   max-height: 300px;
 }
 
+.owl_head a {
+  text-decoration: none;
+  font-size: 30px;
+  color: #fff;
+  margin: 0px 15px;
+}
+
 #login-open-btn,
 #logout-open-btn {
   width: 100%;
@@ -176,11 +183,11 @@ li.active > .sub-menu {
 }
 
 #login-open-btn {
-  background: #0091ea;
+  background: royalblue;
 }
 
 #login-open-btn:hover {
-  background: #007acc;
+  background: royalblue;
   transform: scale(1.05);
 }
 
@@ -191,6 +198,29 @@ li.active > .sub-menu {
 #logout-open-btn:hover {
   background: #c2185b;
   transform: scale(1.05);
+}
+
+.weather-widget-sb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f5f5f5;
+  border-radius: 8px;
+  margin: 10px 0;
+  padding: 30px 0;
+  font-size: 14px;
+  color: #333;
+  gap: 15px;
+}
+
+.weather-widget-sb .temp {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.weather-widget-sb .sky {
+  font-size: 13px;
+  color: #666;
 }
 
 /* {% include "partials/sidebar.html" %} */
