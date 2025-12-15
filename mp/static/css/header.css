@@ -1,10 +1,12 @@
 .header {
   height: 60px;
+  background-color: var(--header-bg); /* --header-bg 변수 참조 */
   box-shadow: 0 0 1px black;
   display: flex;
   align-items: center;
   justify-content: right;
   padding: 0 20px;
+  transition: background-color 0.3s ease; /* 추가 */
 }
 
 .search {
@@ -14,17 +16,18 @@
   width: 300px;
   max-width: 100%;
   border-radius: 20px;
+  background-color: var(--input-bg);
   box-shadow: 0 0 3px black;
   overflow: hidden;
 }
 
 .search:hover {
-  box-shadow: 0 0 5px black;
+  box-shadow: 0 0 5px var(--shadow); /* black → var(--shadow) */
   transition: 1s;
 }
 
 .search:focus-within {
-  box-shadow: 0 0 5px black;
+  box-shadow: 0 0 5px var(--shadow); /* black → var(--shadow) */
 }
 
 .search input {
@@ -35,6 +38,11 @@
   font-size: 14px;
   outline: none;
   border-radius: 20px;
+
+  /* 추가 */
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  transition: all 0.3s ease;
 }
 
 .search-btn {
@@ -46,7 +54,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: black;
+  color: var(--text-color); /* black -> var(--text-color) */
+  transition: color 0.3 ease; /* 추가 */
 }
 
 .search-btn:hover {
