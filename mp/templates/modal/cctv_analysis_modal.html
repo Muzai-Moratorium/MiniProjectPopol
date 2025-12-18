@@ -136,6 +136,29 @@
         document.body.appendChild(widget);
         widget.classList.add("show");
 
+        // ✅ 추가: 다크모드 즉시 적용
+        const isDarkMode = localStorage.getItem("darkMode") === "enabled";
+        if (isDarkMode) {
+          const $widget = $(widget);
+          const $body = $widget.find(".cctv-widget-body");
+          const $labels = $widget.find(
+            ".cctv-selector-label, .cctv-current-name"
+          );
+          const $selector = $widget.find(".cctv-selector");
+
+          $widget.css({
+            background: "#1a1a1a",
+            color: "#e9ecef",
+          });
+          $body.css("background", "#1a1a1a");
+          $labels.css("color", "#e9ecef");
+          $selector.css({
+            background: "#1a1a1a",
+            color: "#e9ecef",
+            borderColor: "#dee2e6",
+          });
+        }
+
         let selectedName = cctvName || ""; // 전달받은 CCTV 이름 사용
         let isAnalyzing = false;
 

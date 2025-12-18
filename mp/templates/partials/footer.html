@@ -92,6 +92,9 @@
               }
 
               // 위젯 HTML 업데이트
+              const isDarkMode = document.body.classList.contains("dark-mode");
+              const textColor = isDarkMode ? "#e9ecef" : "#000000";
+
               widget.innerHTML = `
                 <div class="temp">${data.temp}°C</div>
                 <div class="sky">${weatherText}</div>

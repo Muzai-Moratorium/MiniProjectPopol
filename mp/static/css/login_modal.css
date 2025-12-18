@@ -3,7 +3,7 @@ h3 {
   font-size: 30px;
   margin-bottom: 100px;
   font-weight: bold;
-  color: var(--text-color);
+  color: #000000;
 }
 
 .modal-bg {
@@ -28,8 +28,8 @@ h3 {
   left: 50%;
   transform: translate(-50%, -50%) scale(0.9);
 
-  background: var(--bg-color);
-  color: var(--text-color);
+  background: #ffffff;
+  color: #000000;
 
   padding: 100px;
   border-radius: 8px;
@@ -63,26 +63,25 @@ form {
   margin: 10px 0;
   outline: none;
 
-  background-color: var(--input-bg); /* 추가 */
-  color: var(--text-color); /* 추가 */
-  transition: all 0.3s ease; /* 추가 */
+  background-color: #ffffff;
+  color: #000000;
 }
 
 .email_input input::placeholder,
 .password_input input::placeholder {
-  color: var(--placeholder-color); /* 추가 */
+  color: #000000;
   opacity: 0.7;
 }
 
 .email_input input:hover,
 .password_input input:hover {
-  box-shadow: 0 0 5px var(--shadow);
+  box-shadow: 0 0 5px #ffffff;
   transition: 0.5s;
 }
 
 .email_input input:focus,
 .password_input input:focus {
-  box-shadow: 0 0 5px var(--shadow);
+  box-shadow: 0 0 5px #ffffff;
 }
 
 /* 자동완성 스타일 */
