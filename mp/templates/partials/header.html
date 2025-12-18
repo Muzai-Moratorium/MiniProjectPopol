@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://cdn.boxicons.com/3.0.5/fonts/basic/boxicons.min.css"
+      rel="stylesheet"
+    />
+    <title>Header</title>
+  </head>
+  <body>
+    <header class="header">
+      <!-- <h1><i class="bx bx-owl"></i> 관제 시스템</h1> -->
+      <div class="cctv_btn">
+        <button id="open_cctv_btn" onclick="openCCTVModal()">CCTV TEST</button>
+      </div>
+      <form class="search" onsubmit="searchPlaces();return false;">
+        <input type="text" placeholder="검색어를 입력하세요" id="keyword" />
+        <button class="search-btn" type="submit">
+          <i class="bx bx-search"></i>
+        </button>
+      </form>
+
+      <button class="dark-mode-toggle" id="darkModeToggle">
+        <i class="bx bx-moon"></i>
+      </button>
+      <button
+        id="fireLoadBtn"
+        onclick="toggleFireLoad()"
+        style="background: gray; color: white"
+      >
+        FireLoad: OFF
+      </button>
+
+      <div
+        id="fireMonitorModal"
+        style="
+          display: none;
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          width: 400px;
+          background: white;
+          border: 3px solid red;
+          z-index: 11000;
+        "
+      >
+        <div style="background: red; color: white; padding: 5px">
+          ⚠️ 화재 감지 모니터링
+        </div>
+        <img id="fireStream" src="" style="width: 100%" />
+        <button onclick="closeFireModal()">닫기</button>
+      </div>
+    </header>
+    <script>
+      let isFireLoadActive = false;
+      let monitorInterval = null;
+
+      // 1. FireLoad 버튼 토글
+      function toggleFireLoad() {
+        fetch("/dummy/toggle_fireload", { method: "POST" })
+          .then((res) => res.json())
+          .then((data) => {
+            const btn = document.getElementById("fireLoadBtn");
+            isFireLoadActive = data.status === "ON";
+            btn.innerText = "FireLoad: " + data.status;
+            btn.style.background = isFireLoadActive ? "red" : "gray";
+
+            if (isFireLoadActive) {
+              // 버튼이 켜지면 감시 시작
+              if (!monitorInterval) {
+                monitorInterval = setInterval(startMonitoring, 1000);
+              }
+            } else {
+              // 버튼이 꺼지면 감시 중단 및 화면 초기화
+              clearInterval(monitorInterval);
+              monitorInterval = null;
+              closeFireModal();
+            }
+          });
+      }
+
+      // 2. 주기적 상태 체크 및 영상 출력
+      function startMonitoring() {
+        fetch("/dummy/check_fire")
+          .then((res) => res.json())
+          .then((data) => {
+            const modal = document.getElementById("fireMonitorModal");
+            const streamImg = document.getElementById("fireStream");
+
+            // 버튼이 켜져 있고 실제로 화재가 감지되었을 때만 모달 오픈
+            if (
+              data.is_running &&
+              data.fire_detected &&
+              data.active_video !== ""
+            ) {
+              modal.style.display = "block";
+
+              const newSrc = `/dummy/video_feed/${data.active_video}`;
+              // 소스가 비어있거나 영상이 바뀌었을 때만 업데이트
+              if (streamImg.src.indexOf(data.active_video) === -1) {
+                streamImg.src = newSrc;
+              }
+            } else {
+              // 화재 감지가 안 되면 모달을 숨기고 스트림 중단
+              if (modal.style.display === "block") {
+                closeFireModal();
+              }
+            }
+          })
+          .catch((err) => console.error("Monitoring Error:", err));
+      }
+
+      function closeFireModal() {
+        const modal = document.getElementById("fireMonitorModal");
+        const streamImg = document.getElementById("fireStream");
+        modal.style.display = "none";
+        streamImg.src = ""; // 스트림 연결 해제
+      }
+    </script>
+  </body>
+</html>

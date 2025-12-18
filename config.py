@@ -3,7 +3,7 @@ class Config:
     SECURITY_PASSWORD_SALT="w1h2i3t4e5"
     # MySQL 접속 설정
     SQLALCHEMY_DATABASE_URI = (
-        "mysql+pymysql://flask_user:1234@localhost:3306/flask_db?charset=utf8mb4"
+        "mysql+pymysql://root:1234@localhost:3306/flask_db?charset=utf8mb4"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 

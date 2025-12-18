@@ -1,0 +1,71 @@
+.header {
+  height: 60px;
+  box-shadow: 0 0 1px black;
+  display: flex;
+  align-items: center;
+  justify-content: right;
+  padding: 0 20px;
+  gap: 50px;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 300px;
+  max-width: 100%;
+  border-radius: 20px;
+  box-shadow: 0 0 3px black;
+  overflow: hidden;
+}
+
+.search:hover {
+  box-shadow: 0 0 5px black;
+  transition: 1s;
+}
+
+.search:focus-within {
+  box-shadow: 0 0 5px black;
+}
+
+.search input {
+  flex: auto;
+  height: 40px;
+  border: none;
+  padding: 0 15px;
+  font-size: 14px;
+  outline: none;
+  border-radius: 20px;
+}
+
+.search-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: black;
+}
+
+.search-btn:hover {
+  color: rgb(156, 156, 156);
+  transition: 0.5s;
+}
+
+#open_cctv_btn {
+  border: none;
+  background-color: #667eea;
+  color: white;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 30px;
+  box-shadow: 0 0 1px black;
+}
+
+#open_cctv_btn:hover {
+  box-shadow: 0 0 3px black;
+  transition: 0.3s;
+}
