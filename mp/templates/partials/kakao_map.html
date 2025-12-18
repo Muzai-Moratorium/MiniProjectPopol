@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <title>다음 지도 API</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   </head>
   <body>
     <div id="map"></div>
@@ -25,6 +26,8 @@
 
     <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=453cf90a4b340fce52c05b0d3fb5f7a6"></script>
     <script>
+      var cctvOverlays = [];
+
       var mapContainer = document.getElementById("map"),
         mapOption = {
           center: new kakao.maps.LatLng(37.26, 127.1),
@@ -90,6 +93,23 @@
         { name: "[경부선] 원곡졸음쉼터", lng: 127.1522293, lat: 36.99951172 },
         { name: "[경부선] 안성", lng: 127.15583, lat: 36.99083 },
       ];
+
+      // 다크모드 추가
+      function createCustomOverlay(position, name) {
+        const isDarkMode = document.body.classList.contains("dark-mode");
+
+        const overlayStyle = isDarkMode
+          ? "padding:1px 4px;background:rgba(255,255,255,0.7);color:#000;border-radius:15px;font-size:12px;white-space:nowrap;box-shadow:0 0px 2px rgba(0,0,0,0.3);"
+          : "padding:1px 4px;background:rgba(255,255,255,0.7);color:#000;border-radius:15px;font-size:12px;white-space:nowrap;box-shadow:0 0px 2px rgba(0,0,0,0.3);";
+
+        return new kakao.maps.CustomOverlay({
+          map: map,
+          clickable: true,
+          content: `<div style="${overlayStyle}">${name}</div>`,
+          position: position,
+          yAnchor: 1.5,
+        });
+      }
 
       // 마커 이미지 설정
       var markerImageUrl =
@@ -321,17 +341,10 @@
           map: map,
         });
 
-        // 커스텀 오버레이 생성
-        var customOverlay = new kakao.maps.CustomOverlay({
-          map: map,
-          clickable: true,
-          content:
-            '<div style="padding:1px 4px;background:rgba(255,255,255,0.7);border-radius:15px;font-size:12px;white-space:nowrap;box-shadow:0 0px 2px rgba(0,0,0);">' +
-            cctv.name +
-            "</div>",
-          position: position,
-          yAnchor: 1.5,
-        });
+        // 다크모드를 지원하는 커스텀 오버레이 생성 (CCTV 이름 표시)
+        var customOverlay = createCustomOverlay(position, cctv.name);
+        // 오버레이를 배열에 저장 (다크모드 전환 시 업데이트를 위해 필요)
+        cctvOverlays.push(customOverlay);
 
         // 마커 클릭 이벤트 - CCTV 모달 열기 + 날씨 업데이트
         kakao.maps.event.addListener(marker, "click", function () {
@@ -409,6 +422,45 @@
       // setInterval(function() {
       //   currentTrafficData = loadTrafficData();
       // }, 30 * 1000);
+
+      $(document).ready(function () {
+        // 페이지 로드 시 다크모드 상태 확인 및 즉시 적용
+        const isDarkMode = localStorage.getItem("darkMode") === "enabled";
+
+        if (isDarkMode) {
+          // body에 다크모드 클래스 추가
+          document.body.classList.add("dark-mode");
+
+          // ✅ 상태 패널도 즉시 다크모드 적용
+          const $statusPanel = $("#status-panel");
+          $statusPanel.css({
+            background: "#1a1a1a",
+            color: "#e9ecef",
+          });
+          $statusPanel
+            .find("h3, .legend-item, #last-update")
+            .css("color", "#e9ecef");
+          $statusPanel.find("span").css("color", "#e9ecef"); // ✅ span 태그도 추가
+        } else {
+          // ✅ 라이트모드일 때도 명시적으로 적용
+          const $statusPanel = $("#status-panel");
+          $statusPanel.css({
+            background: "rgba(255, 255, 255, 0.897)",
+            color: "#000000",
+          });
+          $statusPanel
+            .find("h3, .legend-item, #last-update")
+            .css("color", "#000000");
+          $statusPanel.find("span").css("color", "#000000"); // ✅ span 태그도 추가
+        }
+
+        // 지도 로딩 후 오버레이 업데이트
+        setTimeout(function () {
+          if (typeof window.updateMapOverlays === "function") {
+            window.updateMapOverlays(isDarkMode);
+          }
+        }, 1000);
+      });
     </script>
   </body>
 </html>
