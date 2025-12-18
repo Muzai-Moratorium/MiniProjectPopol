@@ -12,12 +12,20 @@
   <body>
     <header class="header">
       <!-- <h1><i class="bx bx-owl"></i> 관제 시스템</h1> -->
-      <div class="cctv_btn">
+      <!-- <div class="cctv_btn">
         <button id="open_cctv_btn" onclick="openCCTVModal()">CCTV TEST</button>
-      </div>
-      <form class="search" onsubmit="searchPlaces();return false;">
-        <input type="text" placeholder="검색어를 입력하세요" id="keyword" />
-        <button class="search-btn" type="submit">
+      </div> -->
+      <form class="search" id="search-form" onsubmit="return false;">
+        <div>
+          <input
+            type="text"
+            placeholder="위치검색"
+            id="keyword"
+            autocomplete="on"
+          />
+          <ul id="search-results" class="search-results"></ul>
+        </div>
+        <button class="search-btn" type="button" id="search-btn">
           <i class="bx bx-search"></i>
         </button>
       </form>
@@ -25,12 +33,8 @@
       <button class="dark-mode-toggle" id="darkModeToggle">
         <i class="bx bx-moon"></i>
       </button>
-      <button
-        id="fireLoadBtn"
-        onclick="toggleFireLoad()"
-        style="background: gray; color: white"
-      >
-        FireLoad: OFF
+      <button id="fireLoadBtn" onclick="toggleFireLoad()">
+        <i class="bx bx-hot"></i>
       </button>
 
       <div
@@ -64,13 +68,27 @@
           .then((data) => {
             const btn = document.getElementById("fireLoadBtn");
             isFireLoadActive = data.status === "ON";
-            btn.innerText = "FireLoad: " + data.status;
+
+            // 아이콘만 표시, ON/OFF 텍스트 제거
+            btn.innerHTML = "<i class='bx bx-hot'></i>";
             btn.style.background = isFireLoadActive ? "red" : "gray";
 
             if (isFireLoadActive) {
-              // 버튼이 켜지면 감시 시작
-              if (!monitorInterval) {
-                monitorInterval = setInterval(startMonitoring, 1000);
+              // confirm 대신 컨펌 기능 추가
+              if (confirm("화재 감지 테스트를 시작하시겠습니까?")) {
+                // 확인 클릭 시 감시 시작
+                if (!monitorInterval) {
+                  monitorInterval = setInterval(startMonitoring, 1000);
+                }
+              } else {
+                // 취소 클릭 시 상태 되돌리기
+                fetch("/dummy/toggle_fireload", { method: "POST" })
+                  .then((res) => res.json())
+                  .then((data) => {
+                    isFireLoadActive = false;
+                    btn.innerHTML = "<i class='bx bx-hot'></i>";
+                    btn.style.background = "gray";
+                  });
               }
             } else {
               // 버튼이 꺼지면 감시 중단 및 화면 초기화
