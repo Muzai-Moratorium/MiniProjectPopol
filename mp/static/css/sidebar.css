@@ -29,7 +29,7 @@
   box-shadow: 0 0 5px beige, 0px 0px 30px white;
   border-radius: 50px;
   transition: 1s;
-  color: royalblue;
+  color: #667eea;
   text-shadow: 0 0 3px rgb(0, 0, 0);
 }
 
@@ -64,7 +64,7 @@ aside.expand {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: royalblue;
+  background: #667eea;
   text-align: center;
   cursor: pointer;
   font-size: 20px;
@@ -183,11 +183,11 @@ li.active > .sub-menu {
 }
 
 #login-open-btn {
-  background: royalblue;
+  background: #667eea;
 }
 
 #login-open-btn:hover {
-  background: royalblue;
+  background: #667eea;
   transform: scale(1.05);
 }
 
