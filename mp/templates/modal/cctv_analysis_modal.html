@@ -162,7 +162,13 @@
         });
 
         // 닫기
-        closeBtn.addEventListener("click", () => widget.remove());
+        closeBtn.addEventListener("click", () => {
+          videoArea.style.display = "none";
+          selectorArea.style.display = "block";
+          streamImg.src = "";
+          isAnalyzing = false;
+          widget.remove();
+        });
 
         // 접기/펼치기
         toggleBtn.addEventListener("click", () => {
