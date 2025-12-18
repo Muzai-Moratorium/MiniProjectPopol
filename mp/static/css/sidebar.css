@@ -157,7 +157,7 @@ aside.expand .bxs-chevron-right {
 }
 
 li.active {
-  background: royalblue;
+  background: #667eea;
 }
 li.active > .sub-menu {
   max-height: 300px;
