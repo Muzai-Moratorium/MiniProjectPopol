@@ -142,7 +142,7 @@ body.dark-mode #login-modal input::placeholder {
 }
 
 body.dark-mode #login-modal button {
-  background-color: royalblue;
+  background-color: #667eea;
   color: #e9ecef;
 }
 
@@ -269,7 +269,7 @@ body.dark-mode .cctv-widget-video-wrapper {
 
 /* ===== 다크모드 토글 버튼 ===== */
 .dark-mode-toggle {
-  background-color: royalblue;
+  background-color: #667eea;
   border: none;
   border-radius: 50%;
   width: 40px;
@@ -286,7 +286,7 @@ body.dark-mode .cctv-widget-video-wrapper {
 }
 
 .dark-mode-toggle:hover {
-  background-color: royalblue;
+  background-color: #667eea;
   transform: scale(1.05) rotate(15deg); /* ✅ 회전 효과 */
 }
 
