@@ -8,3 +8,4 @@ instance/
 *.sqlite
 yolo11s.pt
 .idea
+config.py

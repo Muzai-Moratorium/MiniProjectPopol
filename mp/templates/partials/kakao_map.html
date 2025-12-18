@@ -6,6 +6,13 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   </head>
   <body>
+    <div id="fire-alert">
+      ⚠ 화재 감지 긴급 상황! ⚠<br />
+      <span
+        id="fire-location"
+        style="font-size: 18px; font-weight: normal"
+      ></span>
+    </div>
     <div id="map"></div>
     <div id="status-panel">
       <h3>경부선 교통상태</h3>
@@ -422,6 +429,32 @@
       // setInterval(function() {
       //   currentTrafficData = loadTrafficData();
       // }, 30 * 1000);
+      // 화재 감시 함수
+      async function monitorFireStatus() {
+        const alertDiv = document.getElementById("fire-alert");
+        const locationSpan = document.getElementById("fire-location");
+
+        try {
+          // 위에서 만든 dummy 블루프린트의 API 호출
+          const response = await fetch("/dummy/check_fire");
+          const data = await response.json();
+
+          if (data.detected) {
+            alertDiv.style.display = "block";
+            locationSpan.innerText = "감지된 파일: " + data.video_name;
+
+            // 지도 중심을 화재 발생 예상 지역(예: 특정 마커)으로 이동시키거나
+            // 지도 테두리를 빨갛게 만드는 효과를 추가할 수 있습니다.
+          } else {
+            alertDiv.style.display = "none";
+          }
+        } catch (error) {
+          console.error("화재 모니터링 에러:", error);
+        }
+      }
+
+      // 1초마다 백엔드에 화재 여부를 물어봅니다.
+      setInterval(monitorFireStatus, 1000);
 
       $(document).ready(function () {
         // 페이지 로드 시 다크모드 상태 확인 및 즉시 적용
