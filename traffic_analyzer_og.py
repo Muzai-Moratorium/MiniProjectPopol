@@ -1,18 +1,116 @@
-<!DOCTYPE html>
+from flask import Flask, jsonify, render_template_string
+from flask_cors import CORS
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, func
+from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.ext.declarative import declarative_base
+from datetime import datetime
+
+# ======================================================================
+# Flask 앱 및 DB 설정
+# ======================================================================
+
+app = Flask(__name__)
+CORS(app)
+
+# DB 연결 설정 (traffic_analyzer.py와 동일하게)
+DB_URL = "mysql+pymysql://root:1234@localhost:3306/flask_db?charset=utf8mb4"
+
+Base = declarative_base()
+engine = create_engine(DB_URL, echo=False)
+Session = sessionmaker(bind=engine)
+
+
+# ======================================================================
+# DB 모델 정의 (traffic_analyzer.py와 동일)
+# ======================================================================
+
+class Location(Base):
+    __tablename__ = 'location'
+    id = Column(Integer, primary_key=True)
+    cctv_name = Column(String(255), unique=True, nullable=False)
+    lng = Column(String(50), nullable=False)
+    lat = Column(String(50), nullable=False)
+    statuses = relationship("TrafficStatus", back_populates="location")
+
+
+class TrafficStatus(Base):
+    __tablename__ = 'traffic_status'
+    id = Column(Integer, primary_key=True)
+    location_id = Column(Integer, ForeignKey('location.id'), nullable=False)
+    timestamp = Column(DateTime, default=func.now(), nullable=False)
+    status_upstream = Column(String(50), nullable=False)
+    status_downstream = Column(String(50), nullable=False)
+
+    location = relationship("Location", back_populates="statuses")
+
+
+# ======================================================================
+# API 엔드포인트
+# ======================================================================
+
+@app.route('/api/traffic')
+def get_traffic_data():
+    """
+    최신 교통 데이터를 반환하는 API
+    DB에서 각 location의 최신 status를 조회하여 JavaScript 형식으로 변환
+    """
+    session = Session()
+    try:
+        result = []
+
+        # 모든 location 조회
+        locations = session.query(Location).all()
+
+        for loc in locations:
+            # 해당 location의 가장 최근 status 조회
+            latest_status = session.query(TrafficStatus) \
+                .filter(TrafficStatus.location_id == loc.id) \
+                .order_by(TrafficStatus.timestamp.desc()) \
+                .first()
+
+            if latest_status:
+                # Python 상태값 -> JavaScript 상태값 매핑
+                status_map = {
+                    'Clear': 'smooth',
+                    'Slow': 'slow',
+                    'Congested': 'congested',
+                    'No Traffic': 'smooth',
+                    'N/A': 'smooth'
+                }
+
+                # downstream(하행/부산 방향) 기준으로 사용
+                js_status = status_map.get(latest_status.status_downstream, 'smooth')
+
+                result.append({
+                    'name': loc.cctv_name,
+                    'status': js_status,
+                    'status_downstream': latest_status.status_downstream,
+                    'status_upstream': latest_status.status_upstream,
+                    'timestamp': latest_status.timestamp.isoformat(),
+                    'lng': loc.lng,
+                    'lat': loc.lat
+                })
+
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        session.close()
+
+
+@app.route('/')
+def index():
+    """
+    카카오맵 페이지 (기존 HTML 코드 그대로 사용)
+    """
+    html_content = '''<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
     <title>다음 지도 API</title>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   </head>
   <body>
-    <div id="fire-alert">
-      ⚠ 화재 감지 긴급 상황! ⚠<br />
-      <span
-        id="fire-location"
-        style="font-size: 18px; font-weight: normal"
-      ></span>
-    </div>
     <div id="map"></div>
     <div id="status-panel">
       <h3>경부선 교통상태</h3>
@@ -33,8 +131,6 @@
 
     <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=453cf90a4b340fce52c05b0d3fb5f7a6"></script>
     <script>
-      var cctvOverlays = [];
-
       var mapContainer = document.getElementById("map"),
         mapOption = {
           center: new kakao.maps.LatLng(37.26, 127.1),
@@ -101,23 +197,6 @@
         { name: "[경부선] 안성", lng: 127.15583, lat: 36.99083 },
       ];
 
-      // 다크모드 추가
-      function createCustomOverlay(position, name) {
-        const isDarkMode = document.body.classList.contains("dark-mode");
-
-        const overlayStyle = isDarkMode
-          ? "padding:1px 4px;background:rgba(255,255,255,0.7);color:#000;border-radius:15px;font-size:12px;white-space:nowrap;box-shadow:0 0px 2px rgba(0,0,0,0.3);"
-          : "padding:1px 4px;background:rgba(255,255,255,0.7);color:#000;border-radius:15px;font-size:12px;white-space:nowrap;box-shadow:0 0px 2px rgba(0,0,0,0.3);";
-
-        return new kakao.maps.CustomOverlay({
-          map: map,
-          clickable: true,
-          content: `<div style="${overlayStyle}">${name}</div>`,
-          position: position,
-          yAnchor: 1.5,
-        });
-      }
-
       // 마커 이미지 설정
       var markerImageUrl =
           "https://t1.daumcdn.net/localimg/localimages/07/2012/img/marker_p.png",
@@ -148,17 +227,26 @@
         }
       }
 
-      // ⭐⭐⭐ 수정된 부분: DB에서 실제 교통 데이터 로드 ⭐⭐⭐
+      // ⭐⭐⭐ DB에서 실제 교통 데이터 로드 ⭐⭐⭐
       async function loadTrafficData() {
         try {
+          console.log("📡 교통 데이터 API 호출 중...");
+
           // Flask API 호출
           const response = await fetch("/api/traffic");
 
           if (!response.ok) {
-            throw new Error("API 호출 실패");
+            throw new Error(`HTTP ${response.status}`);
           }
 
           const apiData = await response.json();
+
+          console.log("✅ API 응답 받음:", apiData.length + "개 데이터");
+
+          // API에서 에러 메시지를 반환한 경우
+          if (apiData.error) {
+            throw new Error(apiData.error);
+          }
 
           // API 데이터와 cctvData 매핑
           var trafficData = cctvData.map((cctv) => {
@@ -208,24 +296,23 @@
           document.getElementById("last-update").textContent =
             "마지막 업데이트: " + timeStr;
 
-          console.log("교통 데이터 로드 완료:", trafficData);
+          console.log("✅ 교통 데이터 로드 완료:", trafficData.length + "개 구간");
 
           return trafficData;
         } catch (error) {
-          console.error("교통 데이터 로드 실패:", error);
+          console.error("❌ 교통 데이터 로드 실패:", error);
 
-          // 오류 발생 시 기본 랜덤 데이터로 폴백
-          var statuses = ["smooth", "slow", "congested"];
+          // 오류 발생 시 회색으로 표시
           var trafficData = cctvData.map((cctv) => ({
             ...cctv,
-            status: statuses[Math.floor(Math.random() * statuses.length)],
+            status: "unknown",
           }));
 
           // 기존 폴리라인 제거
           polylines.forEach((p) => p.setMap(null));
           polylines = [];
 
-          // 구간별로 색상 다른 폴리라인 그리기
+          // 구간별로 회색 폴리라인 그리기
           for (let i = 0; i < trafficData.length - 1; i++) {
             var start = new kakao.maps.LatLng(
               trafficData[i].lat,
@@ -235,7 +322,7 @@
               trafficData[i + 1].lat,
               trafficData[i + 1].lng
             );
-            var color = getColorByStatus(trafficData[i].status);
+            var color = "#999999"; // 회색
 
             var polyline = new kakao.maps.Polyline({
               map: map,
@@ -248,6 +335,10 @@
 
             polylines.push(polyline);
           }
+
+          // 에러 메시지 표시
+          document.getElementById("last-update").textContent =
+            "⚠️ 데이터 로드 실패: " + error.message;
 
           return trafficData;
         }
@@ -327,7 +418,7 @@
             <div class="location">위치: ${lat.toFixed(5)}, ${lon.toFixed(
             5
           )}</div>
-          
+
           `;
         } catch (e) {
           console.error("날씨 정보 오류:", e);
@@ -348,10 +439,17 @@
           map: map,
         });
 
-        // 다크모드를 지원하는 커스텀 오버레이 생성 (CCTV 이름 표시)
-        var customOverlay = createCustomOverlay(position, cctv.name);
-        // 오버레이를 배열에 저장 (다크모드 전환 시 업데이트를 위해 필요)
-        cctvOverlays.push(customOverlay);
+        // 커스텀 오버레이 생성
+        var customOverlay = new kakao.maps.CustomOverlay({
+          map: map,
+          clickable: true,
+          content:
+            '<div style="padding:1px 4px;background:rgba(255,255,255,0.7);border-radius:15px;font-size:12px;white-space:nowrap;box-shadow:0 0px 2px rgba(0,0,0);">' +
+            cctv.name +
+            "</div>",
+          position: position,
+          yAnchor: 1.5,
+        });
 
         // 마커 클릭 이벤트 - CCTV 모달 열기 + 날씨 업데이트
         kakao.maps.event.addListener(marker, "click", function () {
@@ -374,11 +472,11 @@
             } else {
               alert(
                 cctv.name +
-                  "\n교통상태: " +
+                  "\\n교통상태: " +
                   statusText +
-                  "\n위도: " +
+                  "\\n위도: " +
                   cctv.lat +
-                  "\n경도: " +
+                  "\\n경도: " +
                   cctv.lng
               );
             }
@@ -388,6 +486,7 @@
 
       // 5분마다 교통 상태 자동 갱신
       setInterval(function () {
+        console.log("🔄 5분 주기 자동 갱신 시작...");
         currentTrafficData = loadTrafficData();
       }, 5 * 60 * 1000);
 
@@ -398,7 +497,7 @@
       function searchPlaces() {
         var keyword = document.getElementById("keyword").value;
 
-        if (!keyword.replace(/^\s+|\s+$/g, "")) {
+        if (!keyword.replace(/^\\s+|\\s+$/g, "")) {
           alert("키워드를 입력해주세요!");
           return false;
         }
@@ -429,71 +528,24 @@
       // setInterval(function() {
       //   currentTrafficData = loadTrafficData();
       // }, 30 * 1000);
-      // 화재 감시 함수
-      async function monitorFireStatus() {
-        const alertDiv = document.getElementById("fire-alert");
-        const locationSpan = document.getElementById("fire-location");
-
-        try {
-          // 위에서 만든 dummy 블루프린트의 API 호출
-          const response = await fetch("/dummy/check_fire");
-          const data = await response.json();
-
-          if (data.detected) {
-            alertDiv.style.display = "block";
-            locationSpan.innerText = "감지된 파일: " + data.video_name;
-
-            // 지도 중심을 화재 발생 예상 지역(예: 특정 마커)으로 이동시키거나
-            // 지도 테두리를 빨갛게 만드는 효과를 추가할 수 있습니다.
-          } else {
-            alertDiv.style.display = "none";
-          }
-        } catch (error) {
-          console.error("화재 모니터링 에러:", error);
-        }
-      }
-
-      // 1초마다 백엔드에 화재 여부를 물어봅니다.
-      setInterval(monitorFireStatus, 1000);
-
-      $(document).ready(function () {
-        // 페이지 로드 시 다크모드 상태 확인 및 즉시 적용
-        const isDarkMode = localStorage.getItem("darkMode") === "enabled";
-
-        if (isDarkMode) {
-          // body에 다크모드 클래스 추가
-          document.body.classList.add("dark-mode");
-
-          // ✅ 상태 패널도 즉시 다크모드 적용
-          const $statusPanel = $("#status-panel");
-          $statusPanel.css({
-            background: "#1a1a1a",
-            color: "#e9ecef",
-          });
-          $statusPanel
-            .find("h3, .legend-item, #last-update")
-            .css("color", "#e9ecef");
-          $statusPanel.find("span").css("color", "#e9ecef"); // ✅ span 태그도 추가
-        } else {
-          // ✅ 라이트모드일 때도 명시적으로 적용
-          const $statusPanel = $("#status-panel");
-          $statusPanel.css({
-            background: "rgba(255, 255, 255, 0.897)",
-            color: "#000000",
-          });
-          $statusPanel
-            .find("h3, .legend-item, #last-update")
-            .css("color", "#000000");
-          $statusPanel.find("span").css("color", "#000000"); // ✅ span 태그도 추가
-        }
-
-        // 지도 로딩 후 오버레이 업데이트
-        setTimeout(function () {
-          if (typeof window.updateMapOverlays === "function") {
-            window.updateMapOverlays(isDarkMode);
-          }
-        }, 1000);
-      });
     </script>
   </body>
-</html>
+</html>'''
+
+    return render_template_string(html_content)
+
+
+# ======================================================================
+# 서버 실행
+# ======================================================================
+
+if __name__ == '__main__':
+    print("=" * 70)
+    print("🚀 Flask API 서버 시작")
+    print(f"📍 DB URL: {DB_URL}")
+    print("🌐 서버 주소: http://localhost:5000")
+    print("🗺️  카카오맵: http://localhost:5000/")
+    print("📊 API 엔드포인트: http://localhost:5000/api/traffic")
+    print("=" * 70)
+
+    app.run(debug=True, host='0.0.0.0', port=5000)
