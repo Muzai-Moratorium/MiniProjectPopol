@@ -24,13 +24,40 @@
           <i class="bx bx-search"></i>
         </button>
       </form>
-
       <button class="dark-mode-toggle" id="darkModeToggle">
         <i class="bx bx-moon"></i>
       </button>
-      <button id="fireLoadBtn" onclick="toggleFireLoad()">
-        <i class="bx bx-hot"></i>
-      </button>
+      <div class="fireLoadBtn">
+        <button id="fireLoadBtn" type="button">
+          <i class="bx bx-vial-alt"></i>
+        </button>
+        <ul>
+          <li>
+            <button onclick="toggleFireLoad()" style="background-color: red">
+              <i class="bx bx-hot"></i>
+            </button>
+          </li>
+          <li>
+            <button
+              id="coneLoadBtn"
+              onclick="toggleConeLoad()"
+              style="background-color: rgb(219, 164, 62)"
+            >
+              <i class="bx bx-traffic-cone"></i>
+            </button>
+          </li>
+          <li>
+            <button
+              onclick="toggleGodroad()"
+              id="godroadBtn"
+              style="background-color: green"
+            >
+              <i class="bx bx-bible"></i>
+            </button>
+          </li>
+          <li><button onclick="">X</button></li>
+        </ul>
+      </div>
 
       <div id="fireMonitorModal">
         <div>⚠️ 화재 감지 모니터링</div>
@@ -40,6 +67,8 @@
     </header>
     <script>
       let isFireLoadActive = false;
+      let isConeLoadActive = false;
+      let isGodroadActive = false;
       let monitorInterval = null;
 
       // 1. FireLoad 버튼 토글
@@ -50,31 +79,28 @@
             const btn = document.getElementById("fireLoadBtn");
             isFireLoadActive = data.status === "ON";
 
-            // 아이콘만 표시, ON/OFF 텍스트 제거
             btn.innerHTML = "<i class='bx bx-hot'></i>";
             btn.style.background = isFireLoadActive ? "red" : "gray";
 
             if (isFireLoadActive) {
-              // confirm 대신 컨펌 기능 추가
               if (confirm("화재 감지 테스트를 시작하시겠습니까?")) {
-                // 확인 클릭 시 감시 시작
                 if (!monitorInterval) {
                   monitorInterval = setInterval(startMonitoring, 1000);
                 }
               } else {
-                // 취소 클릭 시 상태 되돌리기
                 fetch("/dummy/toggle_fireload", { method: "POST" })
                   .then((res) => res.json())
                   .then((data) => {
                     isFireLoadActive = false;
-                    btn.innerHTML = "<i class='bx bx-hot'></i>";
+                    btn.innerHTML = "<i class='bx bx-vial-alt'></i> ";
                     btn.style.background = "gray";
                   });
               }
             } else {
-              // 버튼이 꺼지면 감시 중단 및 화면 초기화
               clearInterval(monitorInterval);
               monitorInterval = null;
+              btn.innerHTML = "<i class='bx bx-vial-alt'></i>";
+              btn.style.background = "gray";
               closeFireModal();
             }
           });
@@ -116,6 +142,74 @@
         const streamImg = document.getElementById("fireStream");
         modal.style.display = "none";
         streamImg.src = ""; // 스트림 연결 해제
+      }
+    </script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+      // 테스트창 토글 제이꽈리고추
+      $(document).ready(function () {
+        const $content = $(".fireLoadBtn ul");
+        const $button = $(".fireLoadBtn button");
+
+        $content.hide();
+
+        $button.on("click", function (e) {
+          e.stopPropagation();
+          const $currentContent = $(this).siblings("ul");
+          $currentContent.slideToggle(300);
+          $(this).toggleClass("active");
+        });
+
+        $(document).on("click", function (e) {
+          if (!$(e.target).closest(".fireLoadBtn").length) {
+            $content.slideUp(300);
+            $button.removeClass("active");
+          }
+        });
+      });
+
+      function toggleConeLoad() {
+        isConeLoadActive = !isConeLoadActive;
+        const mainBtn = document.getElementById("fireLoadBtn");
+
+        if (isConeLoadActive) {
+          const confirmConeLoad = confirm("콘 감지 테스트를 시작하시겠습니까?");
+
+          if (confirmConeLoad === true) {
+            mainBtn.innerHTML = "<i class='bx bx-traffic-cone'></i>";
+            mainBtn.style.background = "rgb(219, 164, 62)";
+          } else {
+            mainBtn.innerHTML = "<i class='bx bx-vial-alt'></i>";
+            mainBtn.style.background = "";
+            isConeLoadActive = false;
+          }
+        } else {
+          mainBtn.innerHTML = "<i class='bx bx-vial-alt'></i>";
+          mainBtn.style.background = "";
+          isConeLoadActive = false;
+        }
+      }
+
+      function toggleGodroad() {
+        isGodroadActive = !isGodroadActive;
+        const mainBtn = document.getElementById("fireLoadBtn");
+
+        if (isGodroadActive) {
+          const confirmConeLoad = confirm("GOD 길 테스트를 시작하시겠습니까?");
+
+          if (confirmConeLoad === true) {
+            mainBtn.innerHTML = " <i class='bx bx-bible'></i>";
+            mainBtn.style.background = "green";
+          } else {
+            mainBtn.innerHTML = "<i class='bx bx-vial-alt'></i>";
+            mainBtn.style.background = "";
+            isConeLoadActive = false;
+          }
+        } else {
+          mainBtn.innerHTML = "<i class='bx bx-vial-alt'></i>";
+          mainBtn.style.background = "";
+          isConeLoadActive = false;
+        }
       }
     </script>
   </body>
