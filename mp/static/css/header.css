@@ -164,3 +164,32 @@ body.dark-mode .search-results li:hover {
 body.dark-mode .search-results li .cctv-info {
   color: #aaa;
 }
+
+#fireMonitorModal {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 400px;
+  background: white;
+  box-shadow: 0 0 5px red;
+  z-index: 99999;
+}
+
+#fireMonitorModal div {
+  padding: 10px;
+  background: #ea6666;
+  color: white;
+}
+
+#fireMonitorModal button {
+  display: flex;
+  justify-content: center;
+  padding: 10px;
+  background: #ea6666;
+  color: white;
+}
+
+#fireMonitorModal button:hover {
+  background: #c25151;
+}

@@ -17,12 +17,7 @@
       </div> -->
       <form class="search" id="search-form" onsubmit="return false;">
         <div>
-          <input
-            type="text"
-            placeholder="위치검색"
-            id="keyword"
-            autocomplete="on"
-          />
+          <input type="text" placeholder="위치검색" id="keyword" />
           <ul id="search-results" class="search-results"></ul>
         </div>
         <button class="search-btn" type="button" id="search-btn">
@@ -37,22 +32,8 @@
         <i class="bx bx-hot"></i>
       </button>
 
-      <div
-        id="fireMonitorModal"
-        style="
-          display: none;
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
-          width: 400px;
-          background: white;
-          border: 3px solid red;
-          z-index: 11000;
-        "
-      >
-        <div style="background: red; color: white; padding: 5px">
-          ⚠️ 화재 감지 모니터링
-        </div>
+      <div id="fireMonitorModal">
+        <div>⚠️ 화재 감지 모니터링</div>
         <img id="fireStream" src="" style="width: 100%" />
         <button onclick="closeFireModal()">닫기</button>
       </div>
