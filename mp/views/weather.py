@@ -1,4 +1,5 @@
-from flask import Flask, request, jsonify, Blueprint
+from flask import Flask, request, jsonify, Blueprint  # ty:ignore[unresolved-import]
+import os
 from datetime import datetime, timedelta
 from geopy.distance import geodesic
 import requests
@@ -49,7 +50,7 @@ def get_weather():
     nx, ny = find_nearest_grid_coordinates(latitude, longitude)
     base_date, base_time = get_base_time()
 
-    service_key = "f6734c6a9dc58e067009fc04ffed145f83b72bd6492d5d43fe344c6aa3342aa6"
+    service_key = os.environ.get("WEATHER_SERVICE_KEY")
 
     api_url = (
         f"https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst"

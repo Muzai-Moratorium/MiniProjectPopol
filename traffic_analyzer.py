@@ -8,6 +8,7 @@ import time
 import sys
 import os
 from dotenv import load_dotenv
+load_dotenv()
 import re
 from concurrent.futures import ThreadPoolExecutor
 from collections import deque, Counter
@@ -62,7 +63,7 @@ class TrafficStatus(Base):
 # # 만약 API 키가 필수라면, key가 None일 경우 여기서 프로그램을 종료하거나 예외를 발생시켜야 합니다.
 # if key == "YOUR_DEFAULT_KEY_OR_EXIT_IF_REQUIRED":
 #     print("❌ 경고: API_KEY 환경 변수가 로드되지 않았습니다. 기본값이 사용되거나 로직이 실패할 수 있습니다.")
-key = "88e0c489ff14491a8642560c3eaebac5"
+key = os.environ.get("CCTV_API_KEY")
 
 
 MIN_X = 126.5

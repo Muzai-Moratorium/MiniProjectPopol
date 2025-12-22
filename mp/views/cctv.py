@@ -2,6 +2,7 @@
 
 from flask import Blueprint, render_template, Response, request
 import urllib.request
+import os
 import urllib.error
 import json
 import pandas as pd
@@ -24,7 +25,7 @@ bp = Blueprint(
 # ----------------------------------------------------------------------
 # 1. 설정 및 상수 정의
 # ----------------------------------------------------------------------
-key = "88e0c489ff14491a8642560c3eaebac5"
+key = os.environ.get("CCTV_API_KEY")
 
 # --- [추가] 카메라 이동 감지 설정 ---
 CAMERA_MOVE_THRESHOLD = 20.0    # 20px 이상 움직이면 카메라 이동으로 간주

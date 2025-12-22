@@ -1,5 +1,7 @@
 # mp/__init__.py 전체 코드
 import os
+from dotenv import load_dotenv
+load_dotenv()
 from flask import Flask
 from flask_security import Security, SQLAlchemyUserDatastore
 from mp.models import db, User, Role
@@ -19,6 +21,10 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     db.init_app(app)
+
+    @app.context_processor
+    def inject_kakao_key():
+        return dict(kakao_app_key=os.environ.get('KAKAO_APP_KEY'))
 
     user_datastore = SQLAlchemyUserDatastore(db, User, Role)
     Security(app, user_datastore)
