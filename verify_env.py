@@ -9,3 +9,5 @@ for key in keys:
     print(f"{key}: {'OK' if value else 'MISSING'}")
     if value:
         print(f"  Value length: {len(value)}")
+
+#.env 키 잘 가져오나 테스트용
