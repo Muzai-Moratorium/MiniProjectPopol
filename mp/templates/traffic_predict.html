@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>교통량 예측 시스템</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .control-panel {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+
+        .btn-predict {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+        }
+
+        .btn-predict:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-predict:active {
+            transform: translateY(0);
+        }
+
+        .btn-predict:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .stat-card .value {
+            color: #667eea;
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .chart-container h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .table-container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        .error {
+            background: #ff4444;
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        .metrics-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .metrics-card h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .metric-row:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            color: #666;
+            font-weight: bold;
+        }
+
+        .metric-value {
+            color: #667eea;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <div class="header">
+            <h1>🚗 교통량 예측 시스템</h1>
+            <p>AI 기반 고속도로 교통량 예측 대시보드</p>
+        </div>
+
+        <!-- 컨트롤 패널 -->
+        <div class="control-panel">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="section">📍 구간 선택</label>
+                    <select id="section">
+                        <option value="">구간을 선택하세요...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="startDate">📅 시작 날짜</label>
+                    <input type="datetime-local" id="startDate" value="2025-12-01T00:00">
+                </div>
+                <div class="form-group">
+                    <label for="endDate">📅 종료 날짜</label>
+                    <input type="datetime-local" id="endDate" value="2025-12-31T23:00">
+                </div>
+            </div>
+            <button class="btn-predict" id="btnPredict">🚀 예측 시작</button>
+        </div>
+
+        <!-- 로딩 -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>AI 모델이 교통량을 예측하고 있습니다...</p>
+            <p style="color: #999; font-size: 0.9em; margin-top: 10px;">첫 실행시 모델 학습으로 1-2분 소요될 수 있습니다.</p>
+        </div>
+
+        <!-- 에러 -->
+        <div class="error" id="error"></div>
+
+        <!-- 결과 -->
+        <div class="results" id="results">
+            <!-- 통계 카드 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>평균 교통량</h3>
+                    <div class="value" id="statMean">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>최대 교통량</h3>
+                    <div class="value" id="statMax">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>최소 교통량</h3>
+                    <div class="value" id="statMin">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>예측 데이터 수</h3>
+                    <div class="value" id="statCount">-</div>
+                </div>
+            </div>
+
+            <!-- 모델 성능 지표 -->
+            <div class="metrics-card" id="metricsCard" style="display: none;">
+                <h2>📊 모델 성능 지표</h2>
+                <div class="metric-row">
+                    <span class="metric-label">MAE (평균 절대 오차)</span>
+                    <span class="metric-value" id="metricMAE">-</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">MAPE (평균 절대 백분율 오차)</span>
+                    <span class="metric-value" id="metricMAPE">-</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">R² (결정계수)</span>
+                    <span class="metric-value" id="metricR2">-</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">학습 데이터 수</span>
+                    <span class="metric-value" id="metricTrainSize">-</span>
+                </div>
+            </div>
+
+            <!-- 차트 -->
+            <div class="chart-container">
+                <h2>📈 시간대별 교통량 예측</h2>
+                <canvas id="trafficChart"></canvas>
+            </div>
+
+            <!-- 테이블 -->
+            <div class="table-container">
+                <h2>📋 상세 예측 데이터</h2>
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>날짜/시간</th>
+                            <th>예측 교통량</th>
+                            <th>요일</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chart = null;
+
+        // 페이지 로드시 구간 목록 불러오기
+        async function loadSections() {
+            try {
+                const response = await fetch('/traffic_predict/api/sections');
+                const data = await response.json();
+
+                const select = document.getElementById('section');
+                data.sections.forEach(section => {
+                    const option = document.createElement('option');
+                    option.value = section;
+                    option.textContent = section;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                showError('구간 목록을 불러오는데 실패했습니다: ' + error.message);
+            }
+        }
+
+        // 예측 실행
+        async function predict() {
+            const section = document.getElementById('section').value;
+            const startDate = document.getElementById('startDate').value.replace('T', ' ') + ':00';
+            const endDate = document.getElementById('endDate').value.replace('T', ' ') + ':00';
+
+            if (!section) {
+                alert('구간을 선택해주세요.');
+                return;
+            }
+
+            // UI 상태 변경
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('error').classList.remove('active');
+            document.getElementById('btnPredict').disabled = true;
+
+            try {
+                const response = await fetch('/traffic_predict/api/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        section: section,
+                        start_date: startDate,
+                        end_date: endDate
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error);
+                }
+
+                // 결과 표시
+                displayResults(data);
+
+            } catch (error) {
+                showError('예측 중 오류가 발생했습니다: ' + error.message);
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+                document.getElementById('btnPredict').disabled = false;
+            }
+        }
+
+        // 결과 표시
+        function displayResults(data) {
+            // 통계 표시
+            document.getElementById('statMean').textContent = Math.round(data.statistics.mean).toLocaleString();
+            document.getElementById('statMax').textContent = Math.round(data.statistics.max).toLocaleString();
+            document.getElementById('statMin').textContent = Math.round(data.statistics.min).toLocaleString();
+            document.getElementById('statCount').textContent = data.prediction_count.toLocaleString();
+
+            // 모델 성능 지표 표시
+            if (data.metrics) {
+                document.getElementById('metricsCard').style.display = 'block';
+                document.getElementById('metricMAE').textContent = Math.round(data.metrics.mae).toLocaleString();
+                document.getElementById('metricMAPE').textContent = data.metrics.mape.toFixed(2) + '%';
+                document.getElementById('metricR2').textContent = data.metrics.r2.toFixed(4);
+                document.getElementById('metricTrainSize').textContent = data.metrics.train_size.toLocaleString();
+            }
+
+            // 차트 그리기
+            drawChart(data.predictions);
+
+            // 테이블 그리기
+            drawTable(data.predictions);
+
+            // 결과 영역 표시
+            document.getElementById('results').classList.add('active');
+        }
+
+        // 차트 그리기
+        function drawChart(predictions) {
+            const ctx = document.getElementById('trafficChart').getContext('2d');
+
+            if (chart) {
+                chart.destroy();
+            }
+
+            const labels = predictions.map(p => {
+                const date = new Date(p.ds);
+                return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit' });
+            });
+
+            const values = predictions.map(p => Math.round(p.pred));
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '예측 교통량',
+                        data: values,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return '교통량: ' + context.parsed.y.toLocaleString() + '대';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 테이블 그리기
+        function drawTable(predictions) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+
+            predictions.forEach(p => {
+                const date = new Date(p.ds);
+                const row = document.createElement('tr');
+
+                row.innerHTML = `
+                    <td>${date.toLocaleString('ko-KR')}</td>
+                    <td><strong>${Math.round(p.pred).toLocaleString()}</strong>대</td>
+                    <td>${weekdays[date.getDay()]}요일</td>
+                `;
+
+                tbody.appendChild(row);
+            });
+        }
+
+        // 에러 표시
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = '❌ ' + message;
+            errorDiv.classList.add('active');
+        }
+
+        // 이벤트 리스너
+        document.getElementById('btnPredict').addEventListener('click', predict);
+
+        // 페이지 로드시 실행
+        loadSections();
+    </script>
+</body>
+</html>

@@ -11,6 +11,7 @@ from mp.views.cctv import bp as traffic_bp
 from mp.views.weather import bp as weather_bp
 # 경로 주의: 프로젝트 구조에 따라 mp.views.safety_analysis.safety_bp 등으로 정확히 입력
 from mp.views.dummy_cctv import bp as dummy_bp, start_fire_thread
+from mp.views.traffic_predict import bp as traffic_predict_bp
 
 from config import Config
 from datetime import date
@@ -30,7 +31,7 @@ def create_app():
     app.register_blueprint(traffic_bp)
     app.register_blueprint(weather_bp, url_prefix='/api')
     app.register_blueprint(dummy_bp)
-
+    app.register_blueprint(traffic_predict_bp)
     # ------------------------------------------------------------------
     # ⭐ 프린트가 안 찍힌다면 이 부분을 아래처럼 수정해서 강제 실행 확인
     # ------------------------------------------------------------------
