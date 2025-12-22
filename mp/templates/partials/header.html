@@ -12,49 +12,63 @@
   <body>
     <header class="header">
       <!-- <h1><i class="bx bx-owl"></i> 관제 시스템</h1> -->
-      <div class="cctv_btn">
+      <!-- <div class="cctv_btn">
         <button id="open_cctv_btn" onclick="openCCTVModal()">CCTV TEST</button>
-      </div>
-      <form class="search" onsubmit="searchPlaces();return false;">
-        <input type="text" placeholder="검색어를 입력하세요" id="keyword" />
-        <button class="search-btn" type="submit">
+      </div> -->
+      <form class="search" id="search-form" onsubmit="return false;">
+        <div>
+          <input type="text" placeholder="위치검색" id="keyword" />
+          <ul id="search-results" class="search-results"></ul>
+        </div>
+        <button class="search-btn" type="button" id="search-btn">
           <i class="bx bx-search"></i>
         </button>
       </form>
-
       <button class="dark-mode-toggle" id="darkModeToggle">
         <i class="bx bx-moon"></i>
       </button>
-      <button
-        id="fireLoadBtn"
-        onclick="toggleFireLoad()"
-        style="background: gray; color: white"
-      >
-        FireLoad: OFF
-      </button>
+      <div class="fireLoadBtn">
+        <button id="fireLoadBtn" type="button">
+          <i class="bx bx-vial-alt"></i>
+        </button>
+        <ul>
+          <li>
+            <button onclick="toggleFireLoad()" style="background-color: red">
+              <i class="bx bx-hot"></i>
+            </button>
+          </li>
+          <li>
+            <button
+              id="coneLoadBtn"
+              onclick="toggleConeLoad()"
+              style="background-color: rgb(219, 164, 62)"
+            >
+              <i class="bx bx-traffic-cone"></i>
+            </button>
+          </li>
+          <li>
+            <button
+              onclick="toggleGodroad()"
+              id="godroadBtn"
+              style="background-color: green"
+            >
+              <i class="bx bx-bible"></i>
+            </button>
+          </li>
+          <li><button onclick="">X</button></li>
+        </ul>
+      </div>
 
-      <div
-        id="fireMonitorModal"
-        style="
-          display: none;
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
-          width: 400px;
-          background: white;
-          border: 3px solid red;
-          z-index: 11000;
-        "
-      >
-        <div style="background: red; color: white; padding: 5px">
-          ⚠️ 화재 감지 모니터링
-        </div>
+      <div id="fireMonitorModal">
+        <div>⚠️ 화재 감지 모니터링</div>
         <img id="fireStream" src="" style="width: 100%" />
         <button onclick="closeFireModal()">닫기</button>
       </div>
     </header>
     <script>
       let isFireLoadActive = false;
+      let isConeLoadActive = false;
+      let isGodroadActive = false;
       let monitorInterval = null;
 
       // 1. FireLoad 버튼 토글
@@ -64,18 +78,29 @@
           .then((data) => {
             const btn = document.getElementById("fireLoadBtn");
             isFireLoadActive = data.status === "ON";
-            btn.innerText = "FireLoad: " + data.status;
+
+            btn.innerHTML = "<i class='bx bx-hot'></i>";
             btn.style.background = isFireLoadActive ? "red" : "gray";
 
             if (isFireLoadActive) {
-              // 버튼이 켜지면 감시 시작
-              if (!monitorInterval) {
-                monitorInterval = setInterval(startMonitoring, 1000);
+              if (confirm("화재 감지 테스트를 시작하시겠습니까?")) {
+                if (!monitorInterval) {
+                  monitorInterval = setInterval(startMonitoring, 1000);
+                }
+              } else {
+                fetch("/dummy/toggle_fireload", { method: "POST" })
+                  .then((res) => res.json())
+                  .then((data) => {
+                    isFireLoadActive = false;
+                    btn.innerHTML = "<i class='bx bx-vial-alt'></i> ";
+                    btn.style.background = "gray";
+                  });
               }
             } else {
-              // 버튼이 꺼지면 감시 중단 및 화면 초기화
               clearInterval(monitorInterval);
               monitorInterval = null;
+              btn.innerHTML = "<i class='bx bx-vial-alt'></i>";
+              btn.style.background = "gray";
               closeFireModal();
             }
           });
@@ -117,6 +142,74 @@
         const streamImg = document.getElementById("fireStream");
         modal.style.display = "none";
         streamImg.src = ""; // 스트림 연결 해제
+      }
+    </script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+      // 테스트창 토글 제이꽈리고추
+      $(document).ready(function () {
+        const $content = $(".fireLoadBtn ul");
+        const $button = $(".fireLoadBtn button");
+
+        $content.hide();
+
+        $button.on("click", function (e) {
+          e.stopPropagation();
+          const $currentContent = $(this).siblings("ul");
+          $currentContent.slideToggle(300);
+          $(this).toggleClass("active");
+        });
+
+        $(document).on("click", function (e) {
+          if (!$(e.target).closest(".fireLoadBtn").length) {
+            $content.slideUp(300);
+            $button.removeClass("active");
+          }
+        });
+      });
+
+      function toggleConeLoad() {
+        isConeLoadActive = !isConeLoadActive;
+        const mainBtn = document.getElementById("fireLoadBtn");
+
+        if (isConeLoadActive) {
+          const confirmConeLoad = confirm("콘 감지 테스트를 시작하시겠습니까?");
+
+          if (confirmConeLoad === true) {
+            mainBtn.innerHTML = "<i class='bx bx-traffic-cone'></i>";
+            mainBtn.style.background = "rgb(219, 164, 62)";
+          } else {
+            mainBtn.innerHTML = "<i class='bx bx-vial-alt'></i>";
+            mainBtn.style.background = "";
+            isConeLoadActive = false;
+          }
+        } else {
+          mainBtn.innerHTML = "<i class='bx bx-vial-alt'></i>";
+          mainBtn.style.background = "";
+          isConeLoadActive = false;
+        }
+      }
+
+      function toggleGodroad() {
+        isGodroadActive = !isGodroadActive;
+        const mainBtn = document.getElementById("fireLoadBtn");
+
+        if (isGodroadActive) {
+          const confirmConeLoad = confirm("GOD 길 테스트를 시작하시겠습니까?");
+
+          if (confirmConeLoad === true) {
+            mainBtn.innerHTML = " <i class='bx bx-bible'></i>";
+            mainBtn.style.background = "green";
+          } else {
+            mainBtn.innerHTML = "<i class='bx bx-vial-alt'></i>";
+            mainBtn.style.background = "";
+            isConeLoadActive = false;
+          }
+        } else {
+          mainBtn.innerHTML = "<i class='bx bx-vial-alt'></i>";
+          mainBtn.style.background = "";
+          isConeLoadActive = false;
+        }
       }
     </script>
   </body>

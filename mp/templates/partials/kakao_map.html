@@ -31,7 +31,7 @@
       <div id="last-update">마지막 업데이트: -</div>
     </div>
 
-    <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=453cf90a4b340fce52c05b0d3fb5f7a6"></script>
+    <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey={{ kakao_app_key }}"></script>
     <script>
       var cctvOverlays = [];
 
@@ -327,7 +327,7 @@
             <div class="location">위치: ${lat.toFixed(5)}, ${lon.toFixed(
             5
           )}</div>
-          
+
           `;
         } catch (e) {
           console.error("날씨 정보 오류:", e);
@@ -391,37 +391,120 @@
         currentTrafficData = loadTrafficData();
       }, 5 * 60 * 1000);
 
-      // 키워드로 장소를 검색합니다
-      // searchPlaces();
+      // 검색 기능 구현
+      const searchInput = document.getElementById("keyword");
+      const searchResults = document.getElementById("search-results");
+      const searchForm = document.getElementById("search-form");
+      const searchBtn = document.getElementById("search-btn");
 
-      // 키워드 검색을 요청하는 함수입니다
-      function searchPlaces() {
-        var keyword = document.getElementById("keyword").value;
-
-        if (!keyword.replace(/^\s+|\s+$/g, "")) {
-          alert("키워드를 입력해주세요!");
-          return false;
+      // 검색 실행 함수
+      function executeSearch() {
+        const keyword = searchInput.value.trim();
+        if (keyword === "") {
+          alert("검색어를 입력해주세요.");
+          return;
         }
 
-        // 장소검색 객체를 통해 키워드로 장소검색을 요청합니다
-        ps.keywordSearch(keyword, placesSearchCB);
+        const filtered = cctvData.filter((cctv) => cctv.name.includes(keyword));
+
+        if (filtered.length > 0) {
+          moveToCCTV(filtered[0]);
+          searchInput.blur(); // 포커스 해제
+        } else {
+          alert("검색 결과가 없습니다.");
+        }
       }
 
-      // 장소검색이 완료됐을 때 호출되는 콜백함수 입니다
-      function placesSearchCB(data, status, pagination) {
-        if (status === kakao.maps.services.Status.OK) {
-          // 정상적으로 검색이 완료됐으면
-          // 검색 목록과 마커를 표출합니다
-          displayPlaces(data);
+      // 검색어 입력 시 필터링
+      if (searchInput) {
+        searchInput.addEventListener("input", function () {
+          const keyword = this.value.trim();
+          if (keyword === "") {
+            searchResults.classList.remove("show");
+            return;
+          }
+          filterCCTV(keyword);
+        });
 
-          // 페이지 번호를 표출합니다
-          displayPagination(pagination);
-        } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
-          alert("검색 결과가 존재하지 않습니다.");
-          return;
-        } else if (status === kakao.maps.services.Status.ERROR) {
-          alert("검색 결과 중 오류가 발생했습니다.");
-          return;
+        // 엔터키 처리
+        searchInput.addEventListener("keypress", function (e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            executeSearch();
+          }
+        });
+
+        // 포커스 시 검색어가 있으면 결과 보여주기, 없으면 전체 목록
+        searchInput.addEventListener("focus", function () {
+          if (this.value.trim() !== "") {
+            filterCCTV(this.value.trim());
+          } else {
+            renderSearchResults(cctvData);
+          }
+        });
+      }
+
+      // 검색 버튼 클릭 처리
+      if (searchBtn) {
+        searchBtn.addEventListener("click", function () {
+          executeSearch();
+        });
+      }
+
+      // 외부 클릭 시 닫기
+      document.addEventListener("click", function (e) {
+        if (!searchForm.contains(e.target)) {
+          searchResults.classList.remove("show");
+        }
+      });
+
+      function filterCCTV(keyword) {
+        const filtered = cctvData.filter((cctv) => cctv.name.includes(keyword));
+        renderSearchResults(filtered);
+      }
+
+      function renderSearchResults(results) {
+        searchResults.innerHTML = "";
+
+        if (results.length === 0) {
+          const li = document.createElement("li");
+          li.textContent = "검색 결과가 없습니다.";
+          li.style.cursor = "default";
+          li.style.textAlign = "center";
+          li.style.color = "#999";
+          searchResults.appendChild(li);
+        } else {
+          results.forEach((cctv) => {
+            const li = document.createElement("li");
+            li.innerHTML = `
+        <span class="cctv-name">${cctv.name}</span>
+        <span class="cctv-info">Lat: ${cctv.lat}, Lng: ${cctv.lng}</span>
+      `;
+            li.addEventListener("click", () => {
+              moveToCCTV(cctv);
+            });
+            searchResults.appendChild(li);
+          });
+        }
+
+        searchResults.classList.add("show");
+      }
+
+      function moveToCCTV(cctv) {
+        const moveLatLon = new kakao.maps.LatLng(cctv.lat, cctv.lng);
+        map.setCenter(moveLatLon);
+        map.setLevel(3); // 줌 레벨 확대
+
+        // 검색창 닫기
+        searchResults.classList.remove("show");
+        searchInput.value = cctv.name;
+
+        if (typeof updateFooterWeather === "function") {
+          updateFooterWeather(cctv.name, cctv.lat, cctv.lng);
+        }
+
+        if (typeof openCCTVModal === "function") {
+          openCCTVModal(cctv.name);
         }
       }
 
