@@ -16,3 +16,19 @@ class Config:
     SECURITY_POST_LOGIN_VIEW = "/auth/redirect"
     SECURITY_POST_LOGOUT_VIEW = "/"
     SECURITY_RECOVERABLE = True
+
+
+    DATA_PATH = 'data/traffic_data.csv'
+
+    XGBOOST_PARAMS = {
+        'n_estimators': 800,
+        'learning_rate': 0.03,
+        'max_depth': 8,
+        'subsample': 0.9,
+        'colsample_bytree': 0.9,
+        'random_state': 42,
+        'tree_method': 'hist'
+    }
+    LAG_LIST = [1, 24, 48, 72, 168]
+    TRAIN_END = "2025-09-30 23:00:00"
+    VALID_END = "2025-11-30 23:00:00"
