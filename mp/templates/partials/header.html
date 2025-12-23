@@ -147,18 +147,38 @@
             } else {
               // 화재 감지가 안 되면 모달을 숨기고 스트림 중단
               if (modal.style.display === "block") {
-                closeFireModal();
+                hideFireModal();
               }
             }
           })
           .catch((err) => console.error("Monitoring Error:", err));
       }
 
-      function closeFireModal() {
+      // 자동으로 모달만 닫기
+      function hideFireModal() {
         const modal = document.getElementById("fireMonitorModal");
         const streamImg = document.getElementById("fireStream");
         modal.style.display = "none";
-        streamImg.src = ""; // 스트림 연결 해제
+        streamImg.src = "";
+      }
+
+      // 사용자가 수동으로 닫기 (완전 종료)
+      function closeFireModal() {
+        hideFireModal();
+
+        if (isFireLoadActive) {
+          fetch("/dummy/toggle_fireload", { method: "POST" })
+            .then((res) => res.json())
+            .then((data) => {
+              isFireLoadActive = false;
+              clearInterval(monitorInterval);
+              monitorInterval = null;
+              const btn = document.getElementById("fireLoadBtn");
+              btn.innerHTML = "<i class='bx bx-vial-alt'></i>";
+              btn.style.background = "gray";
+              console.log("[INFO] 화재 감지 종료");
+            });
+        }
       }
     </script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -241,20 +261,25 @@
               }
             } else {
               if (modal.style.display === "block") {
-                closeConeModal();
+                hideConeModal();
               }
             }
           })
           .catch((err) => console.error("Cone Monitoring Error:", err));
       }
 
-      function closeConeModal() {
+      // 자동으로 모달만 닫기
+      function hideConeModal() {
         const modal = document.getElementById("coneMonitorModal");
         const streamImg = document.getElementById("coneStream");
         modal.style.display = "none";
         streamImg.src = "";
+      }
 
-        // ⭐ 콘 감지도 완전히 종료
+      // 사용자가 수동으로 닫기 (완전 종료)
+      function closeConeModal() {
+        hideConeModal();
+
         if (isConeLoadActive) {
           fetch("/traffic_cone/toggle_coneload", { method: "POST" })
             .then((res) => res.json())
@@ -329,20 +354,25 @@
               }
             } else {
               if (modal.style.display === "block") {
-                closeShoulderParkingModal();
+                hideParkingModal();
               }
             }
           })
           .catch((err) => console.error("Parking Monitoring Error:", err));
       }
 
-      function closeShoulderParkingModal() {
+      // 자동으로 모달만 닫기
+      function hideParkingModal() {
         const modal = document.getElementById("shoulderParkingModal");
         const streamImg = document.getElementById("parkingStream");
         modal.style.display = "none";
         streamImg.src = "";
+      }
 
-        // 주정차 감지도 완전히 종료
+      // 사용자가 수동으로 닫기 (완전 종료)
+      function closeShoulderParkingModal() {
+        hideParkingModal();
+
         if (isParkingActive) {
           fetch("/shoulder_parking/toggle_parking", { method: "POST" })
             .then((res) => res.json())
