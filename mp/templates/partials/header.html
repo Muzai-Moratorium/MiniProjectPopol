@@ -52,7 +52,7 @@
               id="godroadBtn"
               style="background-color: green"
             >
-              <i class="bx bx-bible"></i>
+              <i class="bx bx-car"></i>
             </button>
           </li>
           <li><button onclick="">X</button></li>
@@ -64,12 +64,29 @@
         <img id="fireStream" src="" style="width: 100%" />
         <button onclick="closeFireModal()">닫기</button>
       </div>
+
+      <!-- ⭐ 교통콘 모니터링 모달 ⭐ -->
+      <div id="coneMonitorModal">
+        <div>⚠️ 교통콘 감지 모니터링</div>
+        <img id="coneStream" src="" style="width: 100%" />
+        <button onclick="closeConeModal()">닫기</button>
+      </div>
+
+      <!-- ⭐ 주정차 모니터링 모달 ⭐ -->
+      <div id="shoulderParkingModal">
+        <div>⚠️ 불법 주정차 감지 모니터링</div>
+        <img id="parkingStream" src="" style="width: 100%" />
+        <button onclick="closeShoulderParkingModal()">닫기</button>
+      </div>
     </header>
     <script>
       let isFireLoadActive = false;
       let isConeLoadActive = false;
       let isGodroadActive = false;
       let monitorInterval = null;
+      let coneMonitorInterval = null;
+      let isParkingActive = false;
+      let parkingMonitorInterval = null;
 
       // 1. FireLoad 버튼 토글
       function toggleFireLoad() {
@@ -168,47 +185,176 @@
         });
       });
 
+      // ⭐ 교통콘 감지 토글 ⭐
       function toggleConeLoad() {
-        isConeLoadActive = !isConeLoadActive;
-        const mainBtn = document.getElementById("fireLoadBtn");
+        fetch("/traffic_cone/toggle_coneload", { method: "POST" })
+          .then((res) => res.json())
+          .then((data) => {
+            const btn = document.getElementById("fireLoadBtn");
+            isConeLoadActive = data.status === "ON";
 
+            if (isConeLoadActive) {
+              if (confirm("교통콘 감지 테스트를 시작하시겠습니까?")) {
+                btn.innerHTML = "<i class='bx bx-traffic-cone'></i>";
+                btn.style.background = "rgb(219, 164, 62)";
+
+                if (!coneMonitorInterval) {
+                  coneMonitorInterval = setInterval(startConeMonitoring, 1000);
+                }
+              } else {
+                fetch("/traffic_cone/toggle_coneload", { method: "POST" })
+                  .then((res) => res.json())
+                  .then((data) => {
+                    isConeLoadActive = false;
+                    btn.innerHTML = "<i class='bx bx-vial-alt'></i>";
+                    btn.style.background = "";
+                  });
+              }
+            } else {
+              clearInterval(coneMonitorInterval);
+              coneMonitorInterval = null;
+              btn.innerHTML = "<i class='bx bx-vial-alt'></i>";
+              btn.style.background = "";
+              closeConeModal();
+            }
+          });
+      }
+
+      function startConeMonitoring() {
+        fetch("/traffic_cone/check_cone")
+          .then((res) => res.json())
+          .then((data) => {
+            const modal = document.getElementById("coneMonitorModal");
+            const streamImg = document.getElementById("coneStream");
+
+            if (
+              data.is_running &&
+              data.cone_detected &&
+              data.active_video !== ""
+            ) {
+              modal.style.display = "block";
+
+              const newSrc = `/traffic_cone/video_feed/${data.active_video}`;
+              if (streamImg.src.indexOf(data.active_video) === -1) {
+                streamImg.src = newSrc;
+                console.log("[DEBUG] 교통콘 감지! 스트림 시작:", newSrc);
+              }
+            } else {
+              if (modal.style.display === "block") {
+                closeConeModal();
+              }
+            }
+          })
+          .catch((err) => console.error("Cone Monitoring Error:", err));
+      }
+
+      function closeConeModal() {
+        const modal = document.getElementById("coneMonitorModal");
+        const streamImg = document.getElementById("coneStream");
+        modal.style.display = "none";
+        streamImg.src = "";
+
+        // ⭐ 콘 감지도 완전히 종료
         if (isConeLoadActive) {
-          const confirmConeLoad = confirm("콘 감지 테스트를 시작하시겠습니까?");
-
-          if (confirmConeLoad === true) {
-            mainBtn.innerHTML = "<i class='bx bx-traffic-cone'></i>";
-            mainBtn.style.background = "rgb(219, 164, 62)";
-          } else {
-            mainBtn.innerHTML = "<i class='bx bx-vial-alt'></i>";
-            mainBtn.style.background = "";
-            isConeLoadActive = false;
-          }
-        } else {
-          mainBtn.innerHTML = "<i class='bx bx-vial-alt'></i>";
-          mainBtn.style.background = "";
-          isConeLoadActive = false;
+          fetch("/traffic_cone/toggle_coneload", { method: "POST" })
+            .then((res) => res.json())
+            .then((data) => {
+              isConeLoadActive = false;
+              clearInterval(coneMonitorInterval);
+              coneMonitorInterval = null;
+              const btn = document.getElementById("fireLoadBtn");
+              btn.innerHTML = "<i class='bx bx-vial-alt'></i>";
+              btn.style.background = "";
+              console.log("[INFO] 교통콘 감지 종료");
+            });
         }
       }
 
+      // 주정차 감지 버튼 토글
       function toggleGodroad() {
-        isGodroadActive = !isGodroadActive;
-        const mainBtn = document.getElementById("fireLoadBtn");
+        fetch("/shoulder_parking/toggle_parking", { method: "POST" })
+          .then((res) => res.json())
+          .then((data) => {
+            const btn = document.getElementById("fireLoadBtn");
+            isParkingActive = data.status === "ON";
 
-        if (isGodroadActive) {
-          const confirmConeLoad = confirm("GOD 길 테스트를 시작하시겠습니까?");
+            if (isParkingActive) {
+              if (confirm("불법 주정차 감지 테스트를 시작하시겠습니까?")) {
+                btn.innerHTML = "<i class='bx bx-car'></i>";
+                btn.style.background = "green";
 
-          if (confirmConeLoad === true) {
-            mainBtn.innerHTML = " <i class='bx bx-bible'></i>";
-            mainBtn.style.background = "green";
-          } else {
-            mainBtn.innerHTML = "<i class='bx bx-vial-alt'></i>";
-            mainBtn.style.background = "";
-            isConeLoadActive = false;
-          }
-        } else {
-          mainBtn.innerHTML = "<i class='bx bx-vial-alt'></i>";
-          mainBtn.style.background = "";
-          isConeLoadActive = false;
+                if (!parkingMonitorInterval) {
+                  parkingMonitorInterval = setInterval(
+                    startParkingMonitoring,
+                    1000
+                  );
+                }
+              } else {
+                fetch("/shoulder_parking/toggle_parking", { method: "POST" })
+                  .then((res) => res.json())
+                  .then((data) => {
+                    isParkingActive = false;
+                    btn.innerHTML = "<i class='bx bx-vial-alt'></i>";
+                    btn.style.background = "";
+                  });
+              }
+            } else {
+              clearInterval(parkingMonitorInterval);
+              parkingMonitorInterval = null;
+              btn.innerHTML = "<i class='bx bx-vial-alt'></i>";
+              btn.style.background = "";
+              closeShoulderParkingModal();
+            }
+          });
+      }
+
+      function startParkingMonitoring() {
+        fetch("/shoulder_parking/check_parking")
+          .then((res) => res.json())
+          .then((data) => {
+            const modal = document.getElementById("shoulderParkingModal");
+            const streamImg = document.getElementById("parkingStream");
+
+            if (
+              data.is_running &&
+              data.parking_detected &&
+              data.active_video !== ""
+            ) {
+              modal.style.display = "block";
+
+              const newSrc = `/shoulder_parking/video_feed`; // 경로 간소화
+              if (streamImg.src !== newSrc) {
+                streamImg.src = newSrc;
+                console.log("[DEBUG] 주정차 감지! 스트림 시작:", newSrc);
+              }
+            } else {
+              if (modal.style.display === "block") {
+                closeShoulderParkingModal();
+              }
+            }
+          })
+          .catch((err) => console.error("Parking Monitoring Error:", err));
+      }
+
+      function closeShoulderParkingModal() {
+        const modal = document.getElementById("shoulderParkingModal");
+        const streamImg = document.getElementById("parkingStream");
+        modal.style.display = "none";
+        streamImg.src = "";
+
+        // 주정차 감지도 완전히 종료
+        if (isParkingActive) {
+          fetch("/shoulder_parking/toggle_parking", { method: "POST" })
+            .then((res) => res.json())
+            .then((data) => {
+              isParkingActive = false;
+              clearInterval(parkingMonitorInterval);
+              parkingMonitorInterval = null;
+              const btn = document.getElementById("fireLoadBtn");
+              btn.innerHTML = "<i class='bx bx-vial-alt'></i>";
+              btn.style.background = "";
+              console.log("[INFO] 주정차 감지 종료");
+            });
         }
       }
     </script>
