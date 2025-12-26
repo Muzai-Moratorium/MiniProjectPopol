@@ -5,9 +5,9 @@ from ultralytics import YOLO
 
 bp = Blueprint("traffic_cone", __name__, url_prefix="/traffic_cone")
 
-DUMMY_DIR = os.path.join(os.getcwd(), "dummy")
+DUMMY_DIR = os.path.join(os.getcwd(), "mp", "static", "videos")
 CONE_VIDEO = "cone_test3.mp4"
-cone_model = YOLO("cone.pt")
+cone_model = YOLO("mp/ml_models/cone.pt")
 
 # 상태 관리 변수
 cone_config = {
