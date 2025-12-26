@@ -24,9 +24,9 @@ WARNING_COLOR = (0, 0, 255)
 PARKING_THRESHOLD = 5.0  # 5초 이상 머물면 경고
 STOP_DISTANCE_THRESHOLD = 3.0  # 정차로 간주할 이동 거리 (3픽셀 미만 이동 시 정차)
 
-# YOLO 모델 초기화
-model = None
-IS_MODEL_LOADED = False
+# YOLO 모델
+model = YOLO("yolo11n.pt")
+IS_MODEL_LOADED = True
 
 # 주정차 감지 상태 관리
 IS_PARKING_RUNNING = False
@@ -75,12 +75,6 @@ def create_error_frame(message, width=640, height=480):
 def process_video_background(video_source):
     """백그라운드에서 비디오 처리 및 감지"""
     global IS_PARKING_DETECTED, IS_PARKING_RUNNING, latest_frame
-    
-    initialize_model()
-    
-    if not IS_MODEL_LOADED:
-        print("[ERROR] 모델 로드 실패")
-        return
     
     cap = cv2.VideoCapture(video_source)
     
