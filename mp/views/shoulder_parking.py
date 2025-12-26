@@ -24,7 +24,7 @@ WARNING_COLOR = (0, 0, 255)
 PARKING_THRESHOLD = 5.0  # 5초 이상 머물면 경고
 STOP_DISTANCE_THRESHOLD = 3.0  # 정차로 간주할 이동 거리 (3픽셀 미만 이동 시 정차)
 
-# YOLO 모델 초기화
+# YOLO 모델
 model = YOLO("yolo11n.pt")
 IS_MODEL_LOADED = True
 
