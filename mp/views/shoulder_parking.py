@@ -42,18 +42,6 @@ pts2 = np.array([[746, 348], [783, 359], [886, 283], [860, 273]])
 # ----------------------------------------------------------------------
 # 2. 헬퍼 함수
 # ----------------------------------------------------------------------
-def initialize_model():
-    """YOLO 모델 초기화"""
-    global model, IS_MODEL_LOADED
-    if IS_MODEL_LOADED:
-        return
-    try:
-        model = YOLO("mp/ml_models/yolo11n.pt")
-        IS_MODEL_LOADED = True
-        print("[INFO] YOLO 모델 로드 완료")
-    except Exception as e:
-        print(f"[Error] YOLO 모델 로드 실패: {e}")
-
 def create_error_frame(message, width=640, height=480):
     """에러 메시지를 표시하는 프레임 생성"""
     error_frame = np.zeros((height, width, 3), dtype=np.uint8)
