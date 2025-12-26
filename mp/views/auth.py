@@ -1,12 +1,12 @@
 from flask import Blueprint, redirect, url_for, render_template, request, flash, jsonify
-from flask_security import current_user, login_required, roles_required, hash_password
+from flask_security import current_user, login_required, hash_password
 from flask_security.utils import verify_password, login_user
 from datetime import date
 from mp.models import db, User
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
-# 🆕 모달 로그인 엔드포인트 (JSON 응답)
+#모달 로그인 엔드포인트 (JSON 응답)
 @bp.route("/login_modal", methods=["POST"])
 def login_modal():
     email = request.form.get("email")
@@ -99,8 +99,9 @@ def user_profile():
 
 # 🔐 관리자 전용 페이지
 @bp.route('/admin')
-@roles_required('admin')
 def admin_dashboard():
+    if not current_user.is_authenticated or not current_user.has_role('admin'):
+        return redirect(url_for('index.index'))
     return render_template("auth/admin_dashboard.html", user=current_user)
 
 
