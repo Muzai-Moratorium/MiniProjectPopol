@@ -48,7 +48,7 @@ def initialize_model():
     if IS_MODEL_LOADED:
         return
     try:
-        model = YOLO("yolo11n.pt")
+        model = YOLO("mp/ml_models/yolo11n.pt")
         IS_MODEL_LOADED = True
         print("[INFO] YOLO 모델 로드 완료")
     except Exception as e:
@@ -221,13 +221,13 @@ def index():
     
     if not video_source:
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        default_video = os.path.join(base_dir, "dummy", "suwon1.mp4")
+        default_video = os.path.join(base_dir, "mp", "static", "videos", "suwon1.mp4")
         
         if os.path.exists(default_video):
             video_source = default_video
             print(f"[DEBUG] 비디오 파일 찾음: {video_source}")
         else:
-            video_source = "dummy/suwon1.mp4"
+            video_source = "mp/static/videos/suwon1.mp4"
             error_message = f"기본 비디오 파일을 찾을 수 없습니다: {default_video}"
             print(f"[ERROR] {error_message}")
     
@@ -249,9 +249,9 @@ def toggle_parking():
     else:
         # 기본 비디오 소스 설정
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        default_video = os.path.join(base_dir, "dummy", "suwon1.mp4")
+        default_video = os.path.join(base_dir, "mp", "static", "videos", "suwon1.mp4")
         if os.path.exists(default_video):
-            ACTIVE_PARKING_VIDEO = "dummy/suwon1.mp4"
+            ACTIVE_PARKING_VIDEO = "mp/static/videos/suwon1.mp4"
             
             # 백그라운드 스레드 시작
             if background_thread is None or not background_thread.is_alive():

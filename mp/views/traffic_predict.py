@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, render_template
+from flask import Blueprint, request, jsonify, render_template  # ty:ignore[unresolved-import]
 import pandas as pd
 from mp.models import TrafficPredictor
 from config import Config

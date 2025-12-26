@@ -173,9 +173,17 @@ body.dark-mode .search-results li .cctv-info {
   bottom: 20px;
   right: 20px;
   width: 600px;
+  height: auto;
   background: white;
   box-shadow: 0 0 5px red;
   z-index: 99999;
+}
+
+#fireMonitorModal img,
+#coneMonitorModal img,
+#shoulderParkingModal img {
+  display: block;
+  width: 100%;
 }
 
 #fireMonitorModal div,
