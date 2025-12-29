@@ -1,5 +1,7 @@
 # mp/__init__.py 전체 코드
 import os
+from dotenv import load_dotenv
+load_dotenv()
 from flask import Flask
 from flask_security import Security, SQLAlchemyUserDatastore
 from mp.models import db, User, Role
@@ -11,6 +13,10 @@ from mp.views.cctv import bp as traffic_bp
 from mp.views.weather import bp as weather_bp
 # 경로 주의: 프로젝트 구조에 따라 mp.views.safety_analysis.safety_bp 등으로 정확히 입력
 from mp.views.dummy_cctv import bp as dummy_bp, start_fire_thread
+from mp.views.traffic_predict import bp as traffic_predict_bp
+from mp.views.shoulder_parking import bp as shoulder_bp
+from mp.views.traffic_cone import bp as traffic_cone_bp
+from mp.views.traffic_cone import bp as traffic_cone_bp, start_cone_thread
 
 from config import Config
 from datetime import date
@@ -19,6 +25,10 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     db.init_app(app)
+
+    @app.context_processor
+    def inject_kakao_key():
+        return dict(kakao_app_key=os.environ.get('KAKAO_APP_KEY'))
 
     user_datastore = SQLAlchemyUserDatastore(db, User, Role)
     Security(app, user_datastore)
@@ -30,7 +40,9 @@ def create_app():
     app.register_blueprint(traffic_bp)
     app.register_blueprint(weather_bp, url_prefix='/api')
     app.register_blueprint(dummy_bp)
-
+    app.register_blueprint(traffic_predict_bp)
+    app.register_blueprint(shoulder_bp)
+    app.register_blueprint(traffic_cone_bp)
     # ------------------------------------------------------------------
     # ⭐ 프린트가 안 찍힌다면 이 부분을 아래처럼 수정해서 강제 실행 확인
     # ------------------------------------------------------------------
@@ -38,6 +50,7 @@ def create_app():
     # 만약 안 뜬다면 일단 조건문 없이 호출해 보세요
     # if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
     start_fire_thread()
+    start_cone_thread()      # 교통콘 감지 스레드
     # ------------------------------------------------------------------
 
     with app.app_context():

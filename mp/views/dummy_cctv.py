@@ -5,8 +5,8 @@ from ultralytics import YOLO
 
 bp = Blueprint("dummy", __name__, url_prefix="/dummy")
 
-DUMMY_DIR = os.path.join(os.getcwd(), "dummy")
-fire_model = YOLO("fire.pt")
+DUMMY_DIR = os.path.join(os.getcwd(), "mp", "static", "videos")
+fire_model = YOLO("mp/ml_models/fire.pt")
 
 # 상태 관리 변수
 dummy_config = {
