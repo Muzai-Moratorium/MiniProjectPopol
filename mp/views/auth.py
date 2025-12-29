@@ -92,15 +92,18 @@ def register():
 
 # 🔐 로그인 후 이동할 기본 페이지
 @bp.route('/user')
-@login_required
 def user_profile():
+    if not current_user.is_authenticated:
+        return render_template("auth/user_profile.html", login_required_alert=True)
     return render_template("auth/user_profile.html", user=current_user)
 
 
 # 🔐 관리자 전용 페이지
 @bp.route('/admin')
 def admin_dashboard():
-    if not current_user.is_authenticated or not current_user.has_role('admin'):
+    if not current_user.is_authenticated:
+        return render_template("auth/admin_dashboard.html", login_required_alert=True)
+    if not current_user.has_role('admin'):
         return redirect(url_for('index.index'))
     return render_template("auth/admin_dashboard.html", user=current_user)
 

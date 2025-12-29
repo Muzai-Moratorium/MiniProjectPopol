@@ -12,6 +12,7 @@ from mp.views.index import bp as index
 from mp.views.test import bp as test_bp
 from mp.views.cctv import bp as traffic_bp
 from mp.views.weather import bp as weather_bp
+
 # 경로 주의: 프로젝트 구조에 따라 mp.views.safety_analysis.safety_bp 등으로 정확히 입력
 from mp.views.dummy_cctv import bp as dummy_bp, start_fire_thread
 from mp.views.traffic_predict import bp as traffic_predict_bp
@@ -24,17 +25,10 @@ from mp.views.traffic_mgmt import bp as traffic_mgmt_bp, sync_traffic_to_db
 from config import Config
 from datetime import date
 
-# 전역 변수로 스케줄러 객체 생성
-scheduler = APScheduler()
-
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     db.init_app(app)
-    
-    # 2. 스케줄러 설정 및 시작
-    scheduler.init_app(app)
-    scheduler.start()
 
     @app.context_processor
     def inject_kakao_key():
@@ -53,22 +47,27 @@ def create_app():
     app.register_blueprint(traffic_predict_bp)
     app.register_blueprint(shoulder_bp)
     app.register_blueprint(traffic_cone_bp)
-    app.register_blueprint(wrong_way_bp)
-    app.register_blueprint(traffic_mgmt_bp)
-
-    # 3. 10분 간격 자동 작업 등록 (함수 내부에서 @scheduler.task 정의)
-    @scheduler.task('interval', id='traffic_sync_job', minutes=10)
-    def scheduled_task():
-        with app.app_context():
-            print("--- [Scheduler] 실시간 교통 데이터 수집 중 ---")
-            sync_traffic_to_db()
-
-    # 스레드 시작
+    app.register_blueprint(wrong_way_bp)        # ⭐ 역주행 감지 블루프린트 등록
+    app.register_blueprint(traffic_mgmt_bp)     # 교통관리 블루프린트 등록
+    # ------------------------------------------------------------------
+    # ⭐ 프린트가 안 찍힌다면 이 부분을 아래처럼 수정해서 강제 실행 확인
+    # ------------------------------------------------------------------
+    
+    # 만약 안 뜬다면 일단 조건문 없이 호출해 보세요
+    # if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
     start_fire_thread()
-    start_cone_thread()
+    start_cone_thread()      # 교통콘 감지 스레드
+    # ------------------------------------------------------------------
 
     with app.app_context():
         db.create_all()
-        sync_traffic_to_db()
+        # 관리자 생성 로직 생략...
+        
+        # ⭐ 서버 시작 시 교통 데이터 동기화 (Location 테이블에 데이터 적재)
+        try:
+            sync_traffic_to_db()
+            print("✅ [Traffic] 초기 데이터 동기화 완료!")
+        except Exception as e:
+            print(f"⚠️ [Traffic] 초기 동기화 실패: {e}")
 
     return app

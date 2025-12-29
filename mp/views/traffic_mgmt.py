@@ -110,3 +110,44 @@ def sync_traffic_to_db():
 def get_traffic_api():
     # 현재 저장된 최신 데이터를 JSON으로 주는 API (필요시 사용)
     return {"message": "Success"}
+
+
+@bp.route('/api/traffic')
+def get_traffic_for_map():
+    """DB에서 최신 교통상태를 가져와 카카오맵용 JSON 반환"""
+    from flask import jsonify
+    
+    results = []
+    locations = Location.query.all()
+    
+    for loc in locations:
+        # 해당 Location의 가장 최근 TrafficStatus 가져오기
+        latest = TrafficStatus.query.filter_by(location_id=loc.id)\
+            .order_by(TrafficStatus.timestamp.desc()).first()
+        
+        # 상태 결정 (상행/하행 중 더 나쁜 상태 사용)
+        status = "smooth"  # 기본값
+        if latest:
+            up = latest.status_upstream or ""
+            down = latest.status_downstream or ""
+            if "정체" in up or "정체" in down:
+                status = "congested"
+            elif "서행" in up or "서행" in down:
+                status = "slow"
+        
+        try:
+            lat = float(loc.lat)
+            lng = float(loc.lng)
+        except (ValueError, TypeError):
+            continue  # 좌표 변환 실패 시 스킵
+        
+        results.append({
+            "name": loc.cctv_name,  # 구간명 (예: "서울TG-판교IC")
+            "lat": lat,
+            "lng": lng,
+            "status": status,
+            "status_up": latest.status_upstream if latest else "정보없음",
+            "status_down": latest.status_downstream if latest else "정보없음"
+        })
+    
+    return jsonify(results)

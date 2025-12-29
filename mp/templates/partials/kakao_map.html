@@ -148,10 +148,12 @@
         }
       }
 
-      // ⭐⭐⭐ 수정된 부분: DB에서 실제 교통 데이터 로드 ⭐⭐⭐
+      // ⭐⭐⭐ DB 교통 데이터 기반 마커 표시 ⭐⭐⭐
+      var trafficMarkers = []; // DB 교통상태 마커 저장용
+
       async function loadTrafficData() {
         try {
-          // Flask API 호출
+          // Flask API 호출 (traffic_mgmt.py의 /api/traffic)
           const response = await fetch("/api/traffic");
 
           if (!response.ok) {
@@ -159,43 +161,84 @@
           }
 
           const apiData = await response.json();
+          console.log("📊 DB 교통 데이터:", apiData);
 
-          // API 데이터와 cctvData 매핑
-          var trafficData = cctvData.map((cctv) => {
-            // API에서 해당 CCTV 찾기
-            const apiCctv = apiData.find((item) => item.name === cctv.name);
+          // 기존 교통상태 마커 제거
+          trafficMarkers.forEach((m) => m.setMap(null));
+          trafficMarkers = [];
 
-            return {
-              ...cctv,
-              status: apiCctv ? apiCctv.status : "smooth", // API 데이터 없으면 기본값
-            };
+          // DB 데이터로 교통상태 원형 마커 표시
+          apiData.forEach((item) => {
+            const position = new kakao.maps.LatLng(item.lat, item.lng);
+            const color = getColorByStatus(item.status);
+
+            // 원형 마커 생성
+            const circle = new kakao.maps.Circle({
+              map: map,
+              center: position,
+              radius: 300, // 300m 반경
+              strokeWeight: 2,
+              strokeColor: color,
+              strokeOpacity: 0.8,
+              fillColor: color,
+              fillOpacity: 0.5,
+            });
+            trafficMarkers.push(circle);
+
+            // 구간 정보 오버레이 (클릭 시 표시)
+            const statusText =
+              item.status === "congested"
+                ? "정체"
+                : item.status === "slow"
+                ? "서행"
+                : "원활";
+            const content = `
+              <div style="padding:8px 12px;background:rgba(0,0,0,0.8);color:#fff;border-radius:8px;font-size:12px;white-space:nowrap;">
+                <strong>${item.name}</strong><br>
+                상행: ${item.status_up} | 하행: ${item.status_down}
+              </div>
+            `;
+            const overlay = new kakao.maps.CustomOverlay({
+              position: position,
+              content: content,
+              yAnchor: 1.3,
+            });
+
+            // 원형 클릭 이벤트
+            kakao.maps.event.addListener(circle, "click", function () {
+              overlay.setMap(overlay.getMap() ? null : map);
+            });
           });
 
-          // 기존 폴리라인 제거
+          // 기존 cctvData 기반 폴리라인도 유지 (기존 로직)
           polylines.forEach((p) => p.setMap(null));
           polylines = [];
 
-          // 구간별로 색상 다른 폴리라인 그리기
-          for (let i = 0; i < trafficData.length - 1; i++) {
-            var start = new kakao.maps.LatLng(
-              trafficData[i].lat,
-              trafficData[i].lng
-            );
+          for (let i = 0; i < cctvData.length - 1; i++) {
+            var start = new kakao.maps.LatLng(cctvData[i].lat, cctvData[i].lng);
             var end = new kakao.maps.LatLng(
-              trafficData[i + 1].lat,
-              trafficData[i + 1].lng
+              cctvData[i + 1].lat,
+              cctvData[i + 1].lng
             );
-            var color = getColorByStatus(trafficData[i].status);
+
+            // cctvData와 가장 가까운 DB 데이터 찾아서 상태 결정
+            const nearbyStatus = apiData.find(
+              (a) =>
+                Math.abs(a.lat - cctvData[i].lat) < 0.05 &&
+                Math.abs(a.lng - cctvData[i].lng) < 0.05
+            );
+            var color = nearbyStatus
+              ? getColorByStatus(nearbyStatus.status)
+              : "#999999";
 
             var polyline = new kakao.maps.Polyline({
               map: map,
               path: [start, end],
-              strokeWeight: 15,
+              strokeWeight: 10,
               strokeColor: color,
-              strokeOpacity: 0.5,
+              strokeOpacity: 0.4,
               strokeStyle: "solid",
             });
-
             polylines.push(polyline);
           }
 
@@ -208,48 +251,39 @@
           document.getElementById("last-update").textContent =
             "마지막 업데이트: " + timeStr;
 
-          console.log("교통 데이터 로드 완료:", trafficData);
+          console.log("✅ 교통 데이터 로드 완료:", apiData.length + "개 구간");
 
-          return trafficData;
+          return apiData;
         } catch (error) {
           console.error("교통 데이터 로드 실패:", error);
 
-          // 오류 발생 시 기본 랜덤 데이터로 폴백
-          var statuses = ["smooth", "slow", "congested"];
-          var trafficData = cctvData.map((cctv) => ({
-            ...cctv,
-            status: statuses[Math.floor(Math.random() * statuses.length)],
-          }));
-
-          // 기존 폴리라인 제거
+          // 오류 발생 시 기존 cctvData 기반 폴백
           polylines.forEach((p) => p.setMap(null));
           polylines = [];
 
-          // 구간별로 색상 다른 폴리라인 그리기
-          for (let i = 0; i < trafficData.length - 1; i++) {
-            var start = new kakao.maps.LatLng(
-              trafficData[i].lat,
-              trafficData[i].lng
-            );
+          var statuses = ["smooth", "slow", "congested"];
+          for (let i = 0; i < cctvData.length - 1; i++) {
+            var start = new kakao.maps.LatLng(cctvData[i].lat, cctvData[i].lng);
             var end = new kakao.maps.LatLng(
-              trafficData[i + 1].lat,
-              trafficData[i + 1].lng
+              cctvData[i + 1].lat,
+              cctvData[i + 1].lng
             );
-            var color = getColorByStatus(trafficData[i].status);
+            var color = getColorByStatus(
+              statuses[Math.floor(Math.random() * 3)]
+            );
 
             var polyline = new kakao.maps.Polyline({
               map: map,
               path: [start, end],
-              strokeWeight: 15,
+              strokeWeight: 10,
               strokeColor: color,
-              strokeOpacity: 0.5,
+              strokeOpacity: 0.4,
               strokeStyle: "solid",
             });
-
             polylines.push(polyline);
           }
 
-          return trafficData;
+          return cctvData;
         }
       }
       // ⭐⭐⭐ 수정 끝 ⭐⭐⭐

@@ -70,8 +70,8 @@ def test_page():
     
     return render_template(
         'test.html',
-        if_show_kakao_map=True,
+        if_show_kakao_map=False,
         if_show_map_toggle_modal=True,  
         cctv_names=cctv_names,
-        target_name=None
+        target_name=False,
     )
