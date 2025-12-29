@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 from flask import Flask
 from flask_security import Security, SQLAlchemyUserDatastore
+from flask_apscheduler import APScheduler
 from mp.models import db, User, Role
 
 from mp.views.auth import bp as auth_bp
@@ -18,6 +19,8 @@ from mp.views.traffic_predict import bp as traffic_predict_bp
 from mp.views.shoulder_parking import bp as shoulder_bp
 from mp.views.traffic_cone import bp as traffic_cone_bp
 from mp.views.traffic_cone import bp as traffic_cone_bp, start_cone_thread
+from mp.views.wrong_way import bp as wrong_way_bp
+from mp.views.traffic_mgmt import bp as traffic_mgmt_bp, sync_traffic_to_db
 
 from config import Config
 from datetime import date
@@ -44,7 +47,6 @@ def create_app():
     app.register_blueprint(traffic_predict_bp)
     app.register_blueprint(shoulder_bp)
     app.register_blueprint(traffic_cone_bp)
-    app.register_blueprint(massage_bp)
     # ------------------------------------------------------------------
     # ⭐ 프린트가 안 찍힌다면 이 부분을 아래처럼 수정해서 강제 실행 확인
     # ------------------------------------------------------------------
