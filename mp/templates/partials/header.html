@@ -67,7 +67,6 @@
               <i class="bx bx-undo"></i>
             </button>
           </li>
-          <li><button onclick="">X</button></li>
         </ul>
       </div>
 
@@ -127,6 +126,8 @@
               .then((data) => {
                 isFireLoadActive = data.status === "ON";
                 if (isFireLoadActive) {
+                  document.getElementById("fireLoadBtn").innerHTML =
+                    "<i class='bx bx-hot'></i>";
                   document.getElementById("fireLoadBtn").style.background =
                     "red";
                   monitorInterval = setInterval(startMonitoring, 1000);
@@ -161,7 +162,9 @@
         fetch("/dummy/toggle_fireload", { method: "POST" }).then(() => {
           isFireLoadActive = false;
           clearInterval(monitorInterval);
-          document.getElementById("fireLoadBtn").style.background = "gray";
+          document.getElementById("fireLoadBtn").innerHTML =
+            "<i class='bx bx-vial-alt'></i>";
+          document.getElementById("fireLoadBtn").style.background = "";
         });
       }
 
@@ -178,6 +181,8 @@
               .then((data) => {
                 isConeLoadActive = data.status === "ON";
                 if (isConeLoadActive) {
+                  document.getElementById("fireLoadBtn").innerHTML =
+                    "<i class='bx bx-traffic-cone'></i>";
                   document.getElementById("fireLoadBtn").style.background =
                     "rgb(219, 164, 62)";
                   coneMonitorInterval = setInterval(startConeMonitoring, 1000);
@@ -213,6 +218,8 @@
         fetch("/traffic_cone/toggle_coneload", { method: "POST" }).then(() => {
           isConeLoadActive = false;
           clearInterval(coneMonitorInterval);
+          document.getElementById("fireLoadBtn").innerHTML =
+            "<i class='bx bx-vial-alt'></i>";
           document.getElementById("fireLoadBtn").style.background = "";
         });
       }
@@ -230,6 +237,8 @@
               .then((data) => {
                 isParkingActive = data.status === "ON";
                 if (isParkingActive) {
+                  document.getElementById("fireLoadBtn").innerHTML =
+                    "<i class='bx bx-car'></i>";
                   document.getElementById("fireLoadBtn").style.background =
                     "green";
                   parkingMonitorInterval = setInterval(
@@ -268,6 +277,8 @@
           () => {
             isParkingActive = false;
             clearInterval(parkingMonitorInterval);
+            document.getElementById("fireLoadBtn").innerHTML =
+              "<i class='bx bx-vial-alt'></i>";
             document.getElementById("fireLoadBtn").style.background = "";
           }
         );
