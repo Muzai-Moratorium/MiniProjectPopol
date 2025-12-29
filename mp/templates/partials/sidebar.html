@@ -23,14 +23,14 @@
       <ul class="side-menu">
         <li class="nav-item has-sub">
           <a href="#"
-            ><i class="bx bxs-dashboard"></i><span>테스트</span
+            ><i class="bx bxs-dashboard"></i><span>분석</span
             ><i class="bx bxs-chevron-right"></i
           ></a>
           <ul class="sub-menu">
             <li><a href="{{ url_for('test.test_page') }}">테스트페이지</a></li>
             <li>
               <a href="{{ url_for('traffic_predict.traffic_page') }}"
-                >테스트페이지2</a
+                >교통량 예측</a
               >
             </li>
           </ul>
@@ -38,17 +38,33 @@
 
         <li class="nav-item has-sub">
           <a href="#"
-            ><i class="bx bxs-user"></i><span>사용자페이지</span
+            ><i class="bx bxs-user"></i><span>관리자</span
             ><i class="bx bxs-chevron-right"></i
           ></a>
           <ul class="sub-menu">
-            <li><a href="{{ url_for('auth.admin_dashboard') }}">관리자</a></li>
+            <li>
+              <a
+                href="{{ url_for('auth.admin_dashboard') }}"
+                onclick="return checkLoginRequired(event)"
+                >추가 예정</a
+              >
+            </li>
 
-            <li><a href="{{ url_for('auth.user_profile')}}">고객</a></li>
+            <li>
+              <a
+                href="{{ url_for('auth.user_profile')}}"
+                onclick="return checkLoginRequired(event)"
+                >추가 예정</a
+              >
+            </li>
           </ul>
         </li>
         <li class="nav-item">
-          <a href="#"><i class="bx bxs-inbox"></i><span>메시지</span></a>
+          <a
+            href="{{ url_for('massage.massage') }}"
+            onclick="return checkLoginRequired(event)"
+            ><i class="bx bxs-inbox"></i><span>메시지</span></a
+          >
           <div id="weather-widget" class="weather-widget-sb">
             <p>날씨 불러오는 중...</p>
           </div>
@@ -64,6 +80,29 @@
     </aside>
     <div class="overlay"></div>
     <script>
+      // 로그인 필요 페이지 접근 체크 함수
+      function checkLoginRequired(event) {
+        const isAuthenticated = {{ 'true' if current_user.is_authenticated else 'false' }};
+
+        if (!isAuthenticated) {
+          event.preventDefault(); // 페이지 이동 막기
+
+          alert('로그인 후 이용 부탁드립니다.');
+
+          // 로그인 모달 열기
+          const loginModal = document.getElementById('login-modal');
+          const modalBg = document.getElementById('modal-bg');
+
+          if (loginModal && modalBg) {
+            loginModal.classList.add('show');
+            modalBg.classList.add('show');
+          }
+
+          return false;
+        }
+        return true;
+      }
+
                        // 페이지가 완전히 로드된 후 실행
                   document.addEventListener('DOMContentLoaded', function() {
                     console.log('=== 스크립트 시작 ===');

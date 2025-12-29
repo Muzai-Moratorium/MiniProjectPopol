@@ -71,7 +71,7 @@ def index():
     return render_template(
         'index.html',
         if_show_kakao_map=True,
-        if_show_map_toggle_modal=True,  
+        if_show_map_toggle_modal=False,  
         cctv_names=cctv_names,
         target_name=None
     )
