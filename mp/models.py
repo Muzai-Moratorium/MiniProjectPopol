@@ -45,6 +45,7 @@ class Location(db.Model):
 
 
 class TrafficStatus(db.Model):
+    __tablename__ = 'traffic_status'
     id = db.Column(db.Integer, primary_key=True)
     # Location 테이블의 id를 참조하는 Foreign Key (1:N 관계의 N쪽)
     location_id = db.Column(db.Integer, db.ForeignKey('location.id'), nullable=False)
