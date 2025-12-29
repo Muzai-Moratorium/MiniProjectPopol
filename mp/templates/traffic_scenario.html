@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>교통량 시각화</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .test_traffic_scenario { font-family: Arial, sans-serif; padding: 20px; }
+    .test_traffic_scenario canvas { max-width: 800px; margin-bottom: 50px; }
+    .input-group { margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+{% extends "layout.html" %} {% block content %}
+<div class="traffic_scenario">
+    <h1>시간대별 교통량</h1>
+  <div class="input-group">
+    <label>시작 날짜: <input type="date" id="startDate" value="2025-12-29"></label>
+    <label>종료 날짜: <input type="date" id="endDate" value="2025-12-29"></label>
+    <button id="loadDataBtn">데이터 불러오기</button>
+  </div>
+
+  <h2>출근 시간 최소 교통량</h2>
+  <canvas id="bestCommuteChart"></canvas>
+
+  <h2>퇴근 시간 최대 교통량</h2>
+  <canvas id="worstOffworkChart"></canvas>
+
+  <h2>이상 혼잡 시간</h2>
+  <canvas id="anomalyChart"></canvas>
+</div>
+  <script>
+    let bestChart, worstChart, anomalyChart;
+
+    async function fetchData(url, startDate, endDate) {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          start_date: startDate,
+          end_date: endDate
+        })
+      });
+      return response.json();
+    }
+
+    function createChart(ctx, data, label, color) {
+      return new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: data.map(d => d.time),
+          datasets: [{
+            label: label,
+            data: data.map(d => d.traffic_value),
+            backgroundColor: color
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: true } },
+          scales: {
+            x: { title: { display: true, text: '시간' } },
+            y: { title: { display: true, text: '교통량' }, beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    async function loadData() {
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+
+      const bestData = await fetchData('/traffic_scenario/best-commute-times', startDate, endDate);
+      const worstData = await fetchData('/traffic_scenario/worst-offwork-times', startDate, endDate);
+      const anomalyData = await fetchData('/traffic_scenario/anomaly-times', startDate, endDate);
+
+      // 기존 차트가 있으면 삭제 후 재생성
+      if (bestChart) bestChart.destroy();
+      if (worstChart) worstChart.destroy();
+      if (anomalyChart) anomalyChart.destroy();
+
+      bestChart = createChart(document.getElementById('bestCommuteChart'), bestData, '최소 교통량', 'rgba(75, 192, 192, 0.7)');
+      worstChart = createChart(document.getElementById('worstOffworkChart'), worstData, '최대 교통량', 'rgba(255, 99, 132, 0.7)');
+      anomalyChart = createChart(document.getElementById('anomalyChart'), anomalyData, '이상 혼잡', 'rgba(255, 206, 86, 0.7)');
+    }
+
+    document.getElementById('loadDataBtn').addEventListener('click', loadData);
+
+    // 페이지 로드 시 기본값으로 차트 초기화
+    loadData();
+  </script>
+{% endblock %}
+</body>
+</html>
