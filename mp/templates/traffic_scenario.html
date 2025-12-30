@@ -1,139 +1,57 @@
 <!DOCTYPE html>
 <html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <title>교통량 시나리오 분석</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <style>
-    body {
-      font-family: "Noto Sans KR", sans-serif;
-      background: #f4f6f9;
-      margin: 0;
-      padding: 20px;
-    }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 10px;
-    }
-
-    .hint {
-      text-align: center;
-      color: #555;
-      margin-bottom: 20px;
-      font-size: 14px;
-    }
-
-    .control-panel {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-
-    .control-panel input,
-    .control-panel button {
-      padding: 10px 14px;
-      font-size: 14px;
-    }
-
-    .control-panel button {
-      background: #2563eb;
-      color: white;
-      border: none;
-      cursor: pointer;
-      border-radius: 4px;
-    }
-
-    .control-panel button:hover {
-      background: #1e40af;
-    }
-
-    .chart-wrapper {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      max-width: 1100px;
-      margin: 0 auto;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-  </style>
-</head>
-
-<body>
-
-  <h1>🚦 교통량 시나리오 분석</h1>
-  <div class="hint">
-    👉 범례(색상 글자)를 클릭하면 시간대별 그래프를 켜고 끌 수 있습니다
-  </div>
-
-  <!-- 날짜 선택 -->
-  <div class="control-panel">
-    <div>
-      <label>시작 날짜</label><br>
-      <input type="date" id="start">
-    </div>
-    <div>
-      <label>종료 날짜</label><br>
-      <input type="date" id="end">
-    </div>
-    <div style="align-self: flex-end;">
-      <button onclick="drawChart()">📈 그래프 생성</button>
-    </div>
-  </div>
-
-  <!-- 차트 -->
-  <div class="chart-wrapper">
-    <canvas id="trafficChart" height="120"></canvas>
-  </div>
-
-  <!-- Chart.js -->
+  <head>
+    <meta charset="UTF-8" />
+    <title>교통량 분석</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/traffic_scenario.css') }}"
+    />
+  </head>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <script>
+  <script defer>
     let trafficChart = null;
 
     async function drawChart() {
-      const start = document.getElementById('start').value;
-      const end = document.getElementById('end').value;
+      const start = document.getElementById("start").value;
+      const end = document.getElementById("end").value;
 
       if (!start || !end) {
-        alert('날짜를 선택해주세요.');
+        alert("날짜를 선택해주세요.");
         return;
       }
 
-      const res = await fetch('/traffic_scenario/chart-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/traffic_scenario/chart-data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          start_date: start + ' 00:00:00',
-          end_date: end + ' 23:59:59'
-        })
+          start_date: start + " 00:00:00",
+          end_date: end + " 23:59:59",
+        }),
       });
 
       if (!res.ok) {
-        alert('서버에서 데이터를 가져오지 못했습니다.');
+        alert("서버에서 데이터를 가져오지 못했습니다.");
         return;
       }
 
       const data = await res.json();
-      console.log('📊 chart data:', data);
+      console.log("📊 chart data:", data);
 
-      const ctx = document.getElementById('trafficChart').getContext('2d');
+      const ctx = document.getElementById("trafficChart").getContext("2d");
       if (trafficChart) trafficChart.destroy();
 
       // 중요도별 스타일
       const styleMap = {
-        "전체": { color: "#111827", width: 3, hidden: false },
-        "출근": { color: "#2563eb", width: 3, hidden: false },
-        "퇴근": { color: "#dc2626", width: 3, hidden: false },
+        전체: { color: "#111827", width: 3, hidden: false },
+        출근: { color: "#2563eb", width: 3, hidden: false },
+        퇴근: { color: "#dc2626", width: 3, hidden: false },
 
-        "오전": { color: "#93c5fd", width: 1, hidden: true },
-        "점심": { color: "#fde68a", width: 1, hidden: true },
-        "오후": { color: "#6ee7b7", width: 1, hidden: true },
-        "야간": { color: "#9ca3af", width: 1, hidden: true }
+        오전: { color: "#93c5fd", width: 1, hidden: true },
+        점심: { color: "#fde68a", width: 1, hidden: true },
+        오후: { color: "#6ee7b7", width: 1, hidden: true },
+        야간: { color: "#9ca3af", width: 1, hidden: true },
       };
 
       const datasets = [];
@@ -148,57 +66,72 @@
           borderWidth: style.width || 1,
           hidden: style.hidden ?? true,
           tension: 0.35,
-          spanGaps: true
+          spanGaps: true,
         });
       }
 
       trafficChart = new Chart(ctx, {
-        type: 'line',
+        type: "line",
         data: {
           labels: data.labels,
-          datasets: datasets
+          datasets: datasets,
         },
         options: {
           responsive: true,
           interaction: {
-            mode: 'index',
-            intersect: false
+            mode: "index",
+            intersect: false,
           },
           plugins: {
             legend: {
-              position: 'top',
+              position: "top",
               labels: {
-                usePointStyle: true
-              }
+                usePointStyle: true,
+              },
             },
             tooltip: {
               callbacks: {
-                label: ctx => `${ctx.dataset.label} : ${ctx.parsed.y}`
-              }
-            }
+                label: (ctx) => `${ctx.dataset.label} : ${ctx.parsed.y}`,
+              },
+            },
           },
           scales: {
             y: {
               beginAtZero: true,
               title: {
                 display: true,
-                text: '교통량'
-              }
+                text: "교통량",
+              },
             },
             x: {
               ticks: {
-                maxTicksLimit: 12
+                maxTicksLimit: 12,
               },
               title: {
                 display: true,
-                text: '시간'
-              }
-            }
-          }
-        }
+                text: "시간",
+              },
+            },
+          },
+        },
       });
     }
   </script>
-
-</body>
+  {% extends "layout.html" %} {% block content %}
+  <body>
+    <div class="container_traffic">
+      <h1>교통량 분석</h1>
+      <div class="control-panel">
+        <label>시작 날짜</label>
+        <input type="date" id="start" />
+        <label>종료 날짜</label>
+        <input type="date" id="end" />
+        <button onclick="drawChart()">그래프 생성</button>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="trafficChart"></canvas>
+      </div>
+    </div>
+  </body>
+  {% endblock %}
 </html>
