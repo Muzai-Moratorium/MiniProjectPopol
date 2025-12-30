@@ -126,6 +126,39 @@
   margin-bottom: 10px;
 }
 
+.cctv-weather-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  color: white;
+}
+
+.cctv-weather-info .weather-temp {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.cctv-weather-info .weather-status {
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.95;
+}
+
+/* 헤더에 표시되는 날씨 */
+.header-weather {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
 .cctv-selector-label {
   display: block;
   font-size: 13px;

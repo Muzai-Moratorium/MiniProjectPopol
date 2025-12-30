@@ -167,7 +167,8 @@ body.dark-mode .search-results li .cctv-info {
 
 #fireMonitorModal,
 #coneMonitorModal,
-#shoulderParkingModal {
+#shoulderParkingModal,
+#wrongWayModal {
   display: none;
   position: fixed;
   bottom: 20px;
@@ -181,14 +182,16 @@ body.dark-mode .search-results li .cctv-info {
 
 #fireMonitorModal img,
 #coneMonitorModal img,
-#shoulderParkingModal img {
+#shoulderParkingModal img,
+#wrongWayModal img {
   display: block;
   width: 100%;
 }
 
 #fireMonitorModal div,
 #shoulderParkingModal div,
-#coneMonitorModal div {
+#coneMonitorModal div,
+#wrongWayModal div {
   padding: 10px;
   background: #ea6666;
   color: white;
@@ -196,7 +199,8 @@ body.dark-mode .search-results li .cctv-info {
 
 #fireMonitorModal button,
 #shoulderParkingModal button,
-#coneMonitorModal button {
+#coneMonitorModal button,
+#wrongWayModal button {
   display: flex;
   justify-content: center;
   padding: 10px;
@@ -206,7 +210,8 @@ body.dark-mode .search-results li .cctv-info {
 
 #fireMonitorModal button:hover,
 #shoulderParkingModal button:hover,
-#coneMonitorModal button:hover {
+#coneMonitorModal button:hover,
+#wrongWayModal button:hover {
   background: #c25151;
 }
 

@@ -114,3 +114,15 @@ body.dark-mode .password_input input:-webkit-autofill {
   transition: 0.2s;
   background-color: #007acc;
 }
+
+.modal_p a {
+  text-decoration: underline;
+}
+
+.modal_ps {
+  text-align: center;
+}
+
+.modal_ps a {
+  text-decoration: underline;
+}
