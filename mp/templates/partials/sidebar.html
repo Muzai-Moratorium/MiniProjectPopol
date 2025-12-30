@@ -29,7 +29,9 @@
           <ul class="sub-menu">
             <li> <a href="{{ url_for('traffic_scenario.traffic_scenario_page') }}">테스트페이지</a></li>
             <li>
-              <a href="{{ url_for('traffic_predict.traffic_page') }}"
+              <a
+                href="{{ url_for('traffic_predict.traffic_page') }}"
+                onclick="window.open(this.href, '_blank',width=800,height=1024); return false;"
                 >교통량 예측</a
               >
             </li>
@@ -60,7 +62,9 @@
           </ul>
         </li>
         <li class="nav-item">
-          <a href="#" onclick="return checkLoginRequired(event)"
+          <a
+            href="{{ url_for('massage.massage_page') }}"
+            onclick="return checkLoginRequired(event)"
             ><i class="bx bxs-inbox"></i><span>메시지</span></a
           >
           <div id="weather-widget" class="weather-widget-sb">
