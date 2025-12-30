@@ -1,46 +1,39 @@
-from flask import Flask, Blueprint, request, jsonify, render_template
+from flask import Blueprint, request, jsonify, render_template
 import pandas as pd
 import numpy as np
-from datetime import time, timedelta
+from datetime import time
 
-# ----------------------------
-# Flask 앱 & Blueprint 설정
-# ----------------------------
-app = Flask(__name__)
-
+# =============================
+# Blueprint
+# =============================
 bp = Blueprint(
     'traffic_scenario',
     __name__,
     url_prefix='/traffic_scenario'
 )
 
-
-# ----------------------------
-# 페이지 렌더링
-# ----------------------------
-@bp.route('/', endpoint='scenario_page')
-def scenario_page():
-    """기본 시나리오 페이지"""
+# =============================
+# HTML 페이지
+# =============================
+@bp.route('/traffic_scenario.html')
+def traffic_scenario_page():
     return render_template('traffic_scenario.html')
 
+# =============================
+# 시간대 정의 (세분화)
+# =============================
+TIME_ZONES = {
+    "출근": (time(7, 0), time(9, 0)),
+    "오전": (time(9, 0), time(12, 0)),
+    "점심": (time(12, 0), time(14, 0)),
+    "오후": (time(14, 0), time(17, 0)),
+    "퇴근": (time(17, 0), time(19, 0)),
+    "야간": (time(19, 0), time(22, 0)),
+}
 
-@bp.route('/testpage', endpoint='test_page')
-def test_page():
-    """테스트 페이지"""
-    return render_template('test2.html', title="테스트페이지")
-
-
-# ----------------------------
-# 더미 예측 데이터 생성
-# ----------------------------
-def make_dummy_prediction(start, end):
-    rng = pd.date_range(start, end, freq='H')
-    return pd.DataFrame({
-        'datetime': rng,
-        'pred': np.random.randint(20, 140, len(rng))
-    })
-
-
+# =============================
+# 혼잡도
+# =============================
 def congestion_level(v):
     if v < 30:
         return "원활"
@@ -51,96 +44,111 @@ def congestion_level(v):
     else:
         return "매우 혼잡"
 
+# =============================
+# 더미 데이터 (30분 단위)
+# =============================
+def make_dummy_prediction(start, end):
+    rng = pd.date_range(start, end, freq='30min')
+    traffic = []
 
-# ----------------------------
-# Helper: 시간대별 그룹 생성
-# ----------------------------
-def time_bins(df, start_hour, end_hour, step_minutes=30):
-    """시간 구간별로 나누기, step_minutes 단위"""
-    bins = []
-    current = pd.Timestamp(df['datetime'].dt.date.min()) + pd.Timedelta(hours=start_hour)
-    end_time = pd.Timestamp(df['datetime'].dt.date.min()) + pd.Timedelta(hours=end_hour)
+    for t in rng:
+        base = np.random.randint(25, 60)
 
-    while current < end_time:
-        next_time = current + pd.Timedelta(minutes=step_minutes)
-        bins.append((current.time(), next_time.time()))
-        current = next_time
-    return bins
+        if 7 <= t.hour <= 9:
+            base += np.random.randint(30, 50)
+        if 17 <= t.hour <= 19:
+            base += np.random.randint(40, 60)
 
+        traffic.append(base)
 
-def group_extremes(df, bins, mode='min'):
-    """각 시간대별 최소/최대값 추출"""
-    results = []
-    for start, end in bins:
-        group = df[(df['datetime'].dt.time >= start) & (df['datetime'].dt.time < end)]
-        if not group.empty:
-            if mode == 'min':
-                val = group['pred'].min()
-            else:
-                val = group['pred'].max()
-            rows = group[group['pred'] == val]
-            for _, row in rows.iterrows():
-                results.append({
-                    'time': row['datetime'].strftime('%H:%M'),
-                    'traffic_value': float(row['pred']),
-                    'congestion_level': congestion_level(row['pred'])
-                })
-    return results
+    return pd.DataFrame({
+        "datetime": rng,
+        "traffic": traffic
+    })
 
+# =============================
+# 시간대 필터
+# =============================
+def filter_time(df, start, end):
+    return df[
+        (df["datetime"].dt.time >= start) &
+        (df["datetime"].dt.time < end)
+    ]
 
-# ----------------------------
-# API: 출근 시간 여러 구간 최소값
-# ----------------------------
-@bp.route('/best-commute-times', methods=['POST'])
-def best_commute_times():
+# =============================
+# 📊 차트 전용 API (핵심)
+# =============================
+@bp.route('/chart-data', methods=['POST'])
+def chart_data():
     data = request.get_json()
-    df = make_dummy_prediction(data['start_date'], data['end_date'])
-    df['datetime'] = pd.to_datetime(df['datetime'])
 
-    bins = time_bins(df, 7, 9, step_minutes=30)
-    result = group_extremes(df, bins, mode='min')
-    return jsonify(result)
+    df = make_dummy_prediction(
+        data["start_date"],
+        data["end_date"]
+    )
+    df["datetime"] = pd.to_datetime(df["datetime"])
 
+    labels = df["datetime"].dt.strftime("%H:%M").tolist()
 
-# ----------------------------
-# API: 퇴근 시간 여러 구간 최대값
-# ----------------------------
-@bp.route('/worst-offwork-times', methods=['POST'])
-def worst_offwork_times():
+    datasets = {
+        "전체": df["traffic"].tolist()
+    }
+
+    # 시간대별 데이터셋 생성
+    for name, (s, e) in TIME_ZONES.items():
+        zdf = filter_time(df, s, e)
+        zone_values = [
+            row["traffic"] if s <= row["datetime"].time() < e else None
+            for _, row in df.iterrows()
+        ]
+        datasets[name] = zone_values
+
+    return jsonify({
+        "labels": labels,
+        "datasets": datasets
+    })
+
+# =============================
+# 📈 상세 분석 API
+# =============================
+@bp.route('/scenario-analysis', methods=['POST'])
+def scenario_analysis():
     data = request.get_json()
-    df = make_dummy_prediction(data['start_date'], data['end_date'])
-    df['datetime'] = pd.to_datetime(df['datetime'])
 
-    bins = time_bins(df, 17, 19, step_minutes=30)
-    result = group_extremes(df, bins, mode='max')
-    return jsonify(result)
+    df = make_dummy_prediction(
+        data["start_date"],
+        data["end_date"]
+    )
+    df["datetime"] = pd.to_datetime(df["datetime"])
 
+    analysis = {}
 
-# ----------------------------
-# API: 전체 이상치 (시간대별)
-# ----------------------------
-@bp.route('/anomaly-times', methods=['POST'])
-def anomaly_times():
-    data = request.get_json()
-    df = make_dummy_prediction(data['start_date'], data['end_date'])
-    df['datetime'] = pd.to_datetime(df['datetime'])
+    for name, (s, e) in TIME_ZONES.items():
+        zdf = filter_time(df, s, e)
 
-    mean = df['pred'].mean()
-    std = df['pred'].std()
-    anomaly = df[df['pred'] > mean + 2 * std]
+        analysis[name] = {
+            "avg": round(zdf["traffic"].mean(), 1),
+            "max": int(zdf["traffic"].max()),
+            "min": int(zdf["traffic"].min()),
+            "congestion": congestion_level(zdf["traffic"].mean())
+        }
 
-    bins = time_bins(anomaly, 0, 24, step_minutes=60)
-    result = group_extremes(anomaly, bins, mode='max')
-    return jsonify(result)
+    # 이상치
+    mean = df["traffic"].mean()
+    std = df["traffic"].std()
+    anomalies = df[df["traffic"] > mean + 2 * std]
 
-
-# ----------------------------
-# Flask 앱에 Blueprint 등록
-# ----------------------------
-app.register_blueprint(bp)
-
-# ----------------------------
-# 앱 실행
-# ----------------------------
-if __name__ == "__main__":
-    app.run(debug=True)
+    return jsonify({
+        "overall": {
+            "avg": round(mean, 1),
+            "max": int(df["traffic"].max()),
+            "min": int(df["traffic"].min())
+        },
+        "zones": analysis,
+        "anomalies": [
+            {
+                "time": r["datetime"].strftime("%H:%M"),
+                "traffic": int(r["traffic"])
+            } for _, r in anomalies.iterrows()
+        ]
+    })
