@@ -148,7 +148,7 @@
         }
       }
 
-      // ⭐⭐⭐ DB 교통 데이터 기반 마커 표시 ⭐⭐⭐
+      // DB 교통 데이터 기반 마커 표시
       var trafficMarkers = []; // DB 교통상태 마커 저장용
 
       async function loadTrafficData() {
@@ -251,7 +251,7 @@
           document.getElementById("last-update").textContent =
             "마지막 업데이트: " + timeStr;
 
-          console.log("✅ 교통 데이터 로드 완료:", apiData.length + "개 구간");
+          console.log("교통 데이터 로드 완료:", apiData.length + "개 구간");
 
           return apiData;
         } catch (error) {
@@ -286,7 +286,6 @@
           return cctvData;
         }
       }
-      // ⭐⭐⭐ 수정 끝 ⭐⭐⭐
 
       // 풋터 날씨 위젯 업데이트 함수
       async function updateFooterWeather(cctvName, lat, lon) {
@@ -313,7 +312,6 @@
             throw new Error(data.error);
           }
 
-          // 날씨 상태 판단
           let weatherText = "";
           if (data.rainType && data.rainType != 0) {
             switch (data.rainType) {

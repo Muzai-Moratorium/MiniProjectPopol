@@ -14,8 +14,7 @@
               <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
               <circle cx="12" cy="13" r="4"></circle>
             </svg>
-            <span>CCTV 교통량 분석</span>
-
+            <span>경부선 CCTV</span>
           </div>
           <div class="cctv-widget-controls">
             <button class="cctv-toggle-btn cctv-control-btn" title="접기/펼치기">
@@ -46,7 +45,7 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon points="5 3 19 12 5 21 5 3"></polygon>
               </svg>
-              분석 시작
+              시작
             </button>
           </div>
           <div class="cctv-widget-video-area" style="display:none;">
@@ -287,7 +286,6 @@
                   break;
               }
             }
-            // 헤더에 간단히 표시: 아이콘 + 온도
             headerWeather.textContent = `${statusIcon} ${data.temp}°C`;
           } catch (e) {
             console.error("날씨 로드 오류:", e);
@@ -295,11 +293,9 @@
           }
         }
 
-        // CCTV 이름이 전달되었으면 자동 선택 및 날씨 로드
         if (cctvName) {
           selector.value = cctvName;
           loadWeatherForCCTV(cctvName);
-          // 자동으로 분석 시작
           setTimeout(() => startBtn.click(), 100);
         }
 
@@ -327,14 +323,14 @@
           widget.classList.toggle("collapsed");
         });
 
-        // 이미지 클릭 시 확대 - 새로 추가된 부분
+        // 이미지 클릭 시 확대
         streamImg.addEventListener("click", () => {
           if (streamImg.src && !streamImg.src.includes("placehold.co")) {
             showZoomedImage(streamImg.src);
           }
         });
 
-        // 분석 시작
+        // 시작
         startBtn.addEventListener("click", async () => {
           if (!selectedName) return alert("CCTV를 선택하세요.");
 
@@ -365,7 +361,7 @@
             }
           } finally {
             startBtn.disabled = false;
-            startBtn.textContent = "분석 시작";
+            startBtn.textContent = "시작";
           }
         });
 

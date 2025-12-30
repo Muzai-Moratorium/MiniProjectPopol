@@ -27,7 +27,13 @@
             ><i class="bx bxs-chevron-right"></i
           ></a>
           <ul class="sub-menu">
-            <li> <a href="{{ url_for('traffic_scenario.traffic_scenario_page') }}">테스트페이지</a></li>
+            <li>
+              <a
+                href="{{ url_for('traffic_scenario.traffic_scenario_page') }}"
+                onclick="window.open(this.href, '_blank',width=800,height=1024); return false;"
+                >교통량 분석</a
+              >
+            </li>
             <li>
               <a
                 href="{{ url_for('traffic_predict.traffic_page') }}"
@@ -48,7 +54,7 @@
               <a
                 href="{{ url_for('auth.admin_dashboard') }}"
                 onclick="return checkLoginRequired(event)"
-                >추가 예정</a
+                >관리자 설정</a
               >
             </li>
 
@@ -56,7 +62,7 @@
               <a
                 href="{{ url_for('auth.user_profile')}}"
                 onclick="return checkLoginRequired(event)"
-                >추가 예정</a
+                >내 정보</a
               >
             </li>
           </ul>
