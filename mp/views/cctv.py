@@ -44,11 +44,6 @@ TARGET_CCTV_FILTERS = [
     "[경부선] 원곡졸음쉼터", "[경부선] 안성"
 ]
 
-url_cctv_api = (
-    f'https://openapi.its.go.kr:9443/cctvInfo?apiKey={key}&type=ex&cctvType=1'
-    f'&minX={MIN_X}&maxX={MAX_X}&minY={MIN_Y}&maxY={MAX_Y}&getType=json'
-)
-
 CCTV_URL_DICT = {}
 FILTERED_NAMES = []
 IS_INITIALIZED = False
@@ -57,6 +52,14 @@ def initialize_cctv_data():
     """국가교통정보센터(ITS)로부터 CCTV 원본 API 데이터를 로드 및 정제 (CORS & Vercel 100% 무부하 통과)"""
     global CCTV_URL_DICT, FILTERED_NAMES, IS_INITIALIZED
     if IS_INITIALIZED: return
+    
+    # 🌟 런타임에 실시간으로 환경변수 key를 읽어서 안전하게 URL 조합 (Flask 로딩 타이밍 이슈 완전 해결)
+    key = os.environ.get("CCTV_API_KEY")
+    url_cctv_api = (
+        f'https://openapi.its.go.kr:9443/cctvInfo?apiKey={key}&type=ex&cctvType=1'
+        f'&minX={MIN_X}&maxX={MAX_X}&minY={MIN_Y}&maxY={MAX_Y}&getType=json'
+    )
+    
     try:
         context = ssl._create_unverified_context()
         req = urllib.request.Request(url_cctv_api, headers={'User-Agent': 'Mozilla/5.0'})
