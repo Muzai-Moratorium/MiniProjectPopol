@@ -59,6 +59,11 @@
                 controls autoplay muted playsinline
                 style="width: 100%; height: 100%; object-fit: contain;"
               ></video>
+              <iframe class="cctv-widget-stream-youtube"
+                src="" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen
+                style="width: 100%; height: 100%; object-fit: contain; display:none;"
+              ></iframe>
             </div>
             <div class="cctv-widget-actions">
               <button class="cctv-stop-btn cctv-widget-stop-btn">
@@ -171,6 +176,7 @@
         const videoArea = widget.querySelector(".cctv-widget-video-area");
         const selectorArea = widget.querySelector(".cctv-selector-section");
         const streamVideo = widget.querySelector(".cctv-widget-stream-video");
+        const streamYoutube = widget.querySelector(".cctv-widget-stream-youtube");
         let hlsInstance = null;
         const currentNameSpan = widget.querySelector(".cctv-current-name");
         const headerWeather = widget.querySelector(".header-weather");
@@ -318,6 +324,10 @@
           streamVideo.pause();
           streamVideo.src = "";
           streamVideo.load();
+          if (streamYoutube) {
+            streamYoutube.src = "";
+            streamYoutube.style.display = "none";
+          }
         }
 
         // 닫기
@@ -351,6 +361,7 @@
             }
 
             const liveUrl = data.url;
+            const decodedUrl = decodeURIComponent(liveUrl);
 
             videoArea.style.display = "block";
             selectorArea.style.display = "none";
@@ -358,19 +369,41 @@
 
             stopVideo();
 
-            if (Hls.isSupported()) {
-              hlsInstance = new Hls();
-              hlsInstance.loadSource(liveUrl);
-              hlsInstance.attachMedia(streamVideo);
-              hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-                streamVideo.play().catch(e => console.log("Auto-play blocked:", e));
-              });
-            } else if (streamVideo.canPlayType('application/vnd.apple.mpegurl')) {
-              streamVideo.src = liveUrl;
-              streamVideo.play().catch(e => console.log("Auto-play blocked:", e));
+            // 🌟 유튜브 실시간 스트림 주소 감지 시 iframe 랜더링 스위칭 적용 (CORS 및 버셀 IP 완벽 통과)
+            if (liveUrl.includes("youtube.com") || liveUrl.includes("youtu.be") || decodedUrl.includes("youtube.com") || decodedUrl.includes("youtu.be")) {
+              streamVideo.style.display = 'none';
+              if (streamYoutube) {
+                streamYoutube.style.display = 'block';
+                
+                let videoId = "YZMZSqz9fx8";
+                const checkUrl = decodedUrl.includes("youtube.com") || decodedUrl.includes("youtu.be") ? decodedUrl : liveUrl;
+                if (checkUrl.includes("embed/")) {
+                  videoId = checkUrl.split("embed/")[1].split("?")[0];
+                } else if (checkUrl.includes("watch?v=")) {
+                  videoId = checkUrl.split("watch?v=")[1].split("&")[0];
+                } else if (checkUrl.includes("live/")) {
+                  videoId = checkUrl.split("live/")[1].split("?")[0];
+                }
+                streamYoutube.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=1&showinfo=0&rel=0&loop=1`;
+              }
             } else {
-              streamVideo.src = liveUrl;
-              streamVideo.play().catch(e => console.log("Auto-play blocked:", e));
+              if (streamYoutube) streamYoutube.style.display = 'none';
+              streamVideo.style.display = 'block';
+
+              if (Hls.isSupported()) {
+                hlsInstance = new Hls();
+                hlsInstance.loadSource(liveUrl);
+                hlsInstance.attachMedia(streamVideo);
+                hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+                  streamVideo.play().catch(e => console.log("Auto-play blocked:", e));
+                });
+              } else if (streamVideo.canPlayType('application/vnd.apple.mpegurl')) {
+                streamVideo.src = liveUrl;
+                streamVideo.play().catch(e => console.log("Auto-play blocked:", e));
+              } else {
+                streamVideo.src = liveUrl;
+                streamVideo.play().catch(e => console.log("Auto-play blocked:", e));
+              }
             }
 
             isAnalyzing = true;

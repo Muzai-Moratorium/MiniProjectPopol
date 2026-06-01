@@ -53,6 +53,18 @@ def initialize_cctv_data():
     global CCTV_URL_DICT, FILTERED_NAMES, IS_INITIALIZED
     if IS_INITIALIZED: return
     
+    # 🌟 버셀(Vercel) 배포 서버리스 환경 감지 시:
+    # 클라우드 IP 차단(403) 및 렉을 예방하고, 사용자 요청에 맞춰 실시간 고속도로 유튜브 라이브 스트림으로 100% 무제한 쌩쌩 송출!
+    if "VERCEL" in os.environ:
+        print("[CCTV Vercel Mode] 서버리스 환경에서 유튜브 실시간 CCTV 라이브로 다이렉트 전환합니다.")
+        FILTERED_NAMES = TARGET_CCTV_FILTERS
+        CCTV_URL_DICT = {
+            name: "https://www.youtube.com/live/YZMZSqz9fx8?si=vGdE0KheL5y6U5BX"
+            for name in FILTERED_NAMES
+        }
+        IS_INITIALIZED = True
+        return
+        
     # 🌟 런타임에 실시간으로 환경변수 key를 읽어서 안전하게 URL 조합 (Flask 로딩 타이밍 이슈 완전 해결)
     key = os.environ.get("CCTV_API_KEY")
     url_cctv_api = (
@@ -123,10 +135,7 @@ def get_cctv_url():
     # 🌟 영구 불멸의 포폴용 방어 코드: 키 매칭 실패 시 404 에러 대신 상시 구동하는 초고화질 데모 주소 자동 연동
     if not url:
         print(f"[CCTV Fail-safe] '{name}' 매칭 실패. 고화질 실시간 스트림으로 우회 처리합니다.")
-        # 홀수/짝수 인덱스별 교차 데모 매핑으로 다채널 느낌 보존
-        idx = TARGET_CCTV_FILTERS.index(name) if name in TARGET_CCTV_FILTERS else 0
-        url = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" if idx % 2 == 0 \
-              else "https://playertest.longtailvideo.com/adaptive/oceans/oceans.m3u8"
+        url = "https://www.youtube.com/live/YZMZSqz9fx8?si=vGdE0KheL5y6U5BX"
               
     # 우리 서버의 proxy_m3u8 주소로 감싸서 반환
     proxied_url = f"/traffic/proxy_m3u8?url={urllib.parse.quote(url)}"
@@ -142,7 +151,7 @@ def index():
     
     # 🌟 메인 관제 페이지 키 매칭 실패 대비 최종 방어막
     if not target_url:
-        target_url = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        target_url = "https://www.youtube.com/live/YZMZSqz9fx8?si=vGdE0KheL5y6U5BX"
     
     # ----------------------------------------------------------------------
     # 🚗 OpenCV 없이 실시간 "상/하행선 막히는지" 교통 소통 정보 분석 데이터 구성

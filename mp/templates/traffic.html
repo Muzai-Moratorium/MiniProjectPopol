@@ -47,6 +47,9 @@
                     <!-- HLS 프록시 직접 재생 뷰포트 -->
                     <video id="cctv-video" class="w-full h-full object-contain" controls autoplay muted playsinline></video>
                     
+                    <!-- 🌟 추가: 유튜브 라이브 임베드 전용 뷰포트 (CORS 및 버셀 IP 차단 완전 해결) -->
+                    <iframe id="cctv-youtube" class="w-full h-full object-contain" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="display:none; width: 100%; height: 100%;"></iframe>
+                    
                     <!-- 🚗 실시간 소통 상태 HUD 오버레이 카드 (OpenCV 없이 수려하게 표현) -->
                     <div class="absolute top-4 left-4 flex flex-col gap-2.5 z-10">
                         <!-- 상행선 HUD 카드 -->
@@ -164,6 +167,30 @@
             const overlay = document.getElementById('video-overlay');
 
             if (video && targetUrl) {
+                // 🌟 유튜브 실시간 스트림 주소 감지 시 iframe 랜더링 스위칭 적용 (CORS 및 버셀 IP 완벽 통과)
+                if (targetUrl.includes("youtube.com") || targetUrl.includes("youtu.be") || originalUrl.includes("youtube.com") || originalUrl.includes("youtu.be")) {
+                    const realUrl = originalUrl || targetUrl;
+                    video.style.display = 'none';
+                    const ytIframe = document.getElementById('cctv-youtube');
+                    ytIframe.style.display = 'block';
+                    
+                    let videoId = "YZMZSqz9fx8";
+                    if (realUrl.includes("embed/")) {
+                        videoId = realUrl.split("embed/")[1].split("?")[0];
+                    } else if (realUrl.includes("watch?v=")) {
+                        videoId = realUrl.split("watch?v=")[1].split("&")[0];
+                    } else if (realUrl.includes("live/")) {
+                        videoId = realUrl.split("live/")[1].split("?")[0];
+                    }
+                    ytIframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=1&showinfo=0&rel=0&loop=1`;
+                    overlay.style.display = 'none';
+                    return;
+                } else {
+                    const ytIframe = document.getElementById('cctv-youtube');
+                    if (ytIframe) ytIframe.style.display = 'none';
+                    video.style.display = 'block';
+                }
+
                 video.onplaying = function() {
                     overlay.style.display = 'none';
                 };
