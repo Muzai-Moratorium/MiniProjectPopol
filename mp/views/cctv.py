@@ -53,20 +53,6 @@ def initialize_cctv_data():
     global CCTV_URL_DICT, FILTERED_NAMES, IS_INITIALIZED
     if IS_INITIALIZED: return
     
-    # 🌟 버셀(Vercel) 서버리스 환경 감지 시: 
-    # 클라우드 IP에 대한 공공 API의 403 차단 및 통신 렉을 방지하기 위해 100% 영구 재생 보장 데모 스트림 모드로 다이렉트 전환!
-    if "VERCEL" in os.environ:
-        print("[CCTV Vercel Mode] 서버리스 배포 환경을 감지하여 고화질 데모 스트림으로 다이렉트 활성화합니다.")
-        FILTERED_NAMES = TARGET_CCTV_FILTERS
-        CCTV_URL_DICT = {}
-        for i, name in enumerate(FILTERED_NAMES):
-            if i % 2 == 0:
-                CCTV_URL_DICT[name] = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
-            else:
-                CCTV_URL_DICT[name] = "https://playertest.longtailvideo.com/adaptive/oceans/oceans.m3u8"
-        IS_INITIALIZED = True
-        return
-        
     # 🌟 런타임에 실시간으로 환경변수 key를 읽어서 안전하게 URL 조합 (Flask 로딩 타이밍 이슈 완전 해결)
     key = os.environ.get("CCTV_API_KEY")
     url_cctv_api = (
@@ -76,7 +62,16 @@ def initialize_cctv_data():
     
     try:
         context = ssl._create_unverified_context()
-        req = urllib.request.Request(url_cctv_api, headers={'User-Agent': 'Mozilla/5.0'})
+        # 🌟 등록하신 승인 사용처 도메인을 감지하여 Referer 및 Origin을 동적으로 자동 매핑
+        # 로컬 개발 환경(5000포트)과 버셀 배포 환경의 보안 차단을 동시에 가뿐하게 클리어합니다.
+        domain = "https://mini-project-popol.vercel.app/" if "VERCEL" in os.environ else "http://127.0.0.1:5000/"
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': domain,
+            'Origin': domain
+        }
+        req = urllib.request.Request(url_cctv_api, headers=headers)
         with urllib.request.urlopen(req, context=context, timeout=8) as response:
             json_str = response.read().decode('utf-8')
             data_list = json.loads(json_str).get("response", {}).get("data", [])
