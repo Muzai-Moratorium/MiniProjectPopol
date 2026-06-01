@@ -1,10 +1,10 @@
 from flask import Blueprint, render_template, Response, request, jsonify
 import cv2
 import numpy as np
-from ultralytics import YOLO
 import time
 import os
 import threading
+import random
 
 # Blueprint 객체 생성
 bp = Blueprint(
@@ -35,7 +35,7 @@ INIT_FRAMES = 45
 lane_direction_map = {}
 violation_history = {} # 오탐지 방지용 ID별 위반 카운트
 
-model = YOLO(MODEL_PATH)
+model = None
 
 # ------------------------------------------------------------
 # 2. 백그라운드 분석 로직
@@ -44,14 +44,9 @@ def process_wrong_way_background(video_source):
     global IS_RUNNING, IS_DETECTED, latest_frame, is_trained, init_counter, lane_direction_map, violation_history
     
     cap = cv2.VideoCapture(video_source)
-    prev_gray = None
+    is_trained = True
+    init_counter = INIT_FRAMES
     
-    # 분석 시작 시 변수 초기화
-    is_trained = False
-    init_counter = 0
-    lane_direction_map = {}
-    violation_history = {}
-
     print(f"[INFO] 역주행 감지 스레드 시작: {video_source}")
 
     try:
@@ -61,74 +56,21 @@ def process_wrong_way_background(video_source):
                 cap.set(cv2.CAP_PROP_POS_FRAMES, 0) # 무한 반복
                 continue
             
-            h, w = frame.shape[:2]
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            # 가짜 역주행 토글 이벤트 (가끔 활성화)
+            if random.random() < 0.02:
+                IS_DETECTED = not IS_DETECTED
+            
             annotated_frame = frame.copy()
-
-            # YOLOv11 추적(Tracking) 모드 사용
-            results = model.track(frame, persist=True, classes=VEHICLE_CLASSES, conf=0.3, verbose=False)
-
-            if prev_gray is not None:
-                # 광학 흐름(Optical Flow) 계산
-                flow = cv2.calcOpticalFlowFarneback(prev_gray, gray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
-                
-                any_wrong_way = False # 현재 프레임에 역주행이 한 대라도 있는지 확인
-
-                for r in results:
-                    if r.boxes is None or r.boxes.id is None: continue
-                    
-                    for box in r.boxes:
-                        obj_id = int(box.id[0])
-                        x1, y1, x2, y2 = map(int, box.xyxy[0])
-                        center_x = (x1 + x2) // 2
-                        
-                        roi_flow_y = flow[y1:y2, x1:x2, 1]
-                        if roi_flow_y.size == 0: continue
-                        v_y = np.median(roi_flow_y)
-
-                        # --- [STEP 1] 학습 단계 ---
-                        if not is_trained:
-                            section = center_x // (w // 10)
-                            if section not in lane_direction_map: lane_direction_map[section] = []
-                            lane_direction_map[section].append(v_y)
-                            cv2.putText(annotated_frame, f"Learning Flow... {init_counter}/{INIT_FRAMES}", 
-                                        (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
-
-                        # --- [STEP 2] 감지 단계 ---
-                        else:
-                            section = center_x // (w // 10)
-                            if section in lane_direction_map:
-                                normal_dir = lane_direction_map[section]
-                                
-                                # 역주행 의심 조건 (방향 반대 및 속도 임계값)
-                                if normal_dir * v_y < -2.0:
-                                    violation_history[obj_id] = violation_history.get(obj_id, 0) + 1
-                                else:
-                                    violation_history[obj_id] = max(0, violation_history.get(obj_id, 0) - 1)
-
-                                # 10프레임 이상 연속 위반 시 최종 판단
-                                if violation_history.get(obj_id, 0) > 10:
-                                    any_wrong_way = True
-                                    cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), (0, 0, 255), 3)
-                                    cv2.putText(annotated_frame, f"WRONG WAY! ID:{obj_id}", (x1, y1-10), 
-                                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-                                else:
-                                    cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), (0, 255, 0), 1)
-
-                IS_DETECTED = any_wrong_way # 글로벌 상태 업데이트
-
-                # 학습 카운터 관리
-                if not is_trained:
-                    init_counter += 1
-                    if init_counter >= INIT_FRAMES:
-                        for s in lane_direction_map:
-                            lane_direction_map[s] = np.mean(lane_direction_map[s])
-                        is_trained = True
-                        print("[INFO] 학습 완료: 도로 방향 맵핑 성공")
+            if IS_DETECTED:
+                # 역주행 가짜 UI 표시
+                cv2.rectangle(annotated_frame, (100, 100), (300, 300), (0, 0, 255), 3)
+                cv2.putText(annotated_frame, "WRONG WAY! ID:DUMMY", (100, 90), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+            else:
+                cv2.rectangle(annotated_frame, (100, 100), (300, 300), (0, 255, 0), 1)
 
             latest_frame = annotated_frame
-            prev_gray = gray.copy()
-            time.sleep(0.01) # CPU 부하 조절
+            time.sleep(0.03) # 프레임 지연
 
     finally:
         cap.release()

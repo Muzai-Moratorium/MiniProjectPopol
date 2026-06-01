@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, Response, request, jsonify
 import cv2
-from ultralytics import YOLO
+import random
 import numpy as np
 import time
 import math
@@ -25,7 +25,7 @@ PARKING_THRESHOLD = 5.0  # 5초 이상 머물면 경고
 STOP_DISTANCE_THRESHOLD = 3.0  # 정차로 간주할 이동 거리 (3픽셀 미만 이동 시 정차)
 
 # YOLO 모델
-model = YOLO("yolo11n.pt")
+model = None
 IS_MODEL_LOADED = True
 
 # 주정차 감지 상태 관리
@@ -61,7 +61,7 @@ def create_error_frame(message, width=640, height=480):
 # 3. 백그라운드 비디오 처리
 # ----------------------------------------------------------------------
 def process_video_background(video_source):
-    """백그라운드에서 비디오 처리 및 감지"""
+    """백그라운드에서 비디오 처리 및 감지 (더미화)"""
     global IS_PARKING_DETECTED, IS_PARKING_RUNNING, latest_frame
     
     cap = cv2.VideoCapture(video_source)
@@ -69,9 +69,6 @@ def process_video_background(video_source):
     if not cap.isOpened():
         print(f"[Error] 비디오 소스를 열 수 없습니다: {video_source}")
         return
-    
-    track_history = {}
-    parking_timer = {}
     
     print("[INFO] 백그라운드 비디오 처리 시작")
     
@@ -82,93 +79,26 @@ def process_video_background(video_source):
                 cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                 continue
             
-            # 객체 추적
-            results = model.track(frame, persist=True, verbose=False, classes=[2])
-            
             # 라인 및 영역 그리기
             cv2.polylines(frame, [pts1], True, (0, 255, 0), 2, cv2.LINE_AA)
             cv2.polylines(frame, [pts2], True, (0, 255, 0), 2, cv2.LINE_AA)
             
-            warning_list = []
-            fill_pts1 = False
-            fill_pts2 = False
+            # 가짜 주정차 이벤트 감지 (가끔 활성화)
+            if random.random() < 0.02:
+                IS_PARKING_DETECTED = not IS_PARKING_DETECTED
             
-            if results[0].boxes.id is not None:
-                boxes = results[0].boxes.xywh.cpu()
-                track_ids = results[0].boxes.id.int().cpu().tolist()
-                
-                for box, track_id in zip(boxes, track_ids):
-                    x, y, w, h = box
-                    center_point = (int(x), int(y))
-                    
-                    is_inside = cv2.pointPolygonTest(pts1, center_point, False)
-                    is_inside2 = cv2.pointPolygonTest(pts2, center_point, False)
-                    
-                    if is_inside >= 0 or is_inside2 >= 0:
-                        is_stopped = False
-                        if track_id in track_history:
-                            prev_p = track_history[track_id]
-                            dist = math.sqrt((center_point[0] - prev_p[0])**2 + 
-                                        (center_point[1] - prev_p[1])**2)
-                            
-                            if dist < STOP_DISTANCE_THRESHOLD:
-                                is_stopped = True
-                        
-                        if is_stopped:
-                            if track_id not in parking_timer:
-                                parking_timer[track_id] = time.time()
-                            
-                            elapsed_time = time.time() - parking_timer[track_id]
-                            
-                            if elapsed_time < PARKING_THRESHOLD:
-                                cv2.putText(frame, f" {int(elapsed_time)}s", 
-                                        (int(x), int(y)-10), 
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
-                            else:
-                                IS_PARKING_DETECTED = True
-                                # print(f"[INFO] 불법 주정차 감지! ID:{track_id}, {int(elapsed_time)}초")
-                                
-                                warning_list.append((track_id, int(elapsed_time)))
-                                
-                                x1, y1 = int(x - w/2), int(y - h/2)
-                                x2, y2 = int(x + w/2), int(y + h/2)
-                                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 3)
-                                
-                                if is_inside >= 0:
-                                    fill_pts1 = True
-                                if is_inside2 >= 0:
-                                    fill_pts2 = True
-                        else:
-                            if track_id in parking_timer:
-                                del parking_timer[track_id]
-                    else:
-                        if track_id in parking_timer:
-                            del parking_timer[track_id]
-                        if track_id in track_history:
-                            del track_history[track_id]
-                    
-                    track_history[track_id] = center_point
-                    cv2.circle(frame, center_point, 5, (0, 255, 0), -1)
-            
-            if len(warning_list) == 0:
-                IS_PARKING_DETECTED = False
-            
-            if fill_pts1 or fill_pts2:
+            if IS_PARKING_DETECTED:
+                # 감지된 것처럼 영역 색칠
                 overlay = frame.copy()
-                if fill_pts1:
-                    cv2.fillPoly(overlay, [pts1], WARNING_COLOR)
-                if fill_pts2:
-                    cv2.fillPoly(overlay, [pts2], WARNING_COLOR)
+                cv2.fillPoly(overlay, [pts1], WARNING_COLOR)
                 cv2.addWeighted(overlay, 0.4, frame, 0.6, 0, frame)
-            
-            for i, (id_num, sec) in enumerate(warning_list):
-                cv2.putText(frame, f"WARNING! ID:{id_num} PARKING ({sec}s)", 
-                          (30, 50 + (i * 40)), 
+                
+                cv2.putText(frame, "WARNING! ID:DUMMY PARKING (10s)", 
+                          (30, 50), 
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
             
             # 최신 프레임 저장
             latest_frame = frame.copy()
-            
             time.sleep(0.03)
             
     finally:

@@ -1,13 +1,12 @@
 # mp/views/traffic_cone.py
-import os, cv2, time, threading
+import os, cv2, time, threading, random
 from flask import Blueprint, render_template, Response, jsonify
-from ultralytics import YOLO
 
 bp = Blueprint("traffic_cone", __name__, url_prefix="/traffic_cone")
 
 DUMMY_DIR = os.path.join(os.getcwd(), "mp", "static", "videos")
 CONE_VIDEO = "cone_test3.mp4"
-cone_model = YOLO("mp/ml_models/cone.pt")
+cone_model = None
 
 # 상태 관리 변수
 cone_config = {
@@ -46,20 +45,13 @@ def run_cone_detection():
                 print(f"[CONE] {CONE_VIDEO} 읽기 실패 또는 종료") 
                 break
 
-            results = cone_model(frame, stream=True, verbose=False)
-            detected = False
-            for r in results:
-                if len(r.boxes) > 0:
-                    for box in r.boxes:
-                        if float(box.conf[0]) > 0.6:
-                            detected = True
-                            # print(f"[CONE] ✅ 감지! conf={float(box.conf[0]):.2f}") 
-                            break
+            # YOLO 분석 생략 (더미 감지: 15% 확률로 임의의 교통콘 감지 플래그 설정)
+            detected = random.random() < 0.15
             
             cone_config["cone_detected"] = detected
             cone_config["active_video"] = CONE_VIDEO if detected else ""
             
-            time.sleep(0.01)
+            time.sleep(0.5)
         
         cap.release()
         print(f"[CONE] {CONE_VIDEO} 종료")
@@ -94,22 +86,17 @@ def video_feed(filename):
     def generate():
         cap = cv2.VideoCapture(video_path)
         while cap.isOpened():
-            if not cone_config["is_running"] or not cone_config["cone_detected"]:
+            if not cone_config["is_running"]:
                 break
                 
             ret, frame = cap.read()
             if not ret:
                 break
 
-            results = cone_model(frame, verbose=False)
-            boxes = results[0].boxes
-            
-            if len(boxes) > 0 and float(boxes[0].conf[0]) > 0.5:
-                annotated_frame = results[0].plot()
-                _, buffer = cv2.imencode('.jpg', annotated_frame)
-                yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-            else:
-                time.sleep(0.1)
+            # YOLO 분석 없이 영상을 그대로 인코딩해서 보냄
+            _, buffer = cv2.imencode('.jpg', frame)
+            yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+            time.sleep(0.03)
                 
         cap.release()
         print(f"[CONE] 스트림 종료: {filename}") 

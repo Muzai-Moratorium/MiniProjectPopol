@@ -46,7 +46,7 @@ def get_full_location_db():
 
 def sync_traffic_to_db():
     """실제 DB에 적재하는 함수"""
-    print("🚀 [Traffic] 데이터 수집 및 DB 적재 프로세스 시작...")
+    print("[Traffic] 데이터 수집 및 DB 적재 프로세스 시작...")
     loc_db = get_full_location_db()
     
     try:
@@ -104,7 +104,7 @@ def sync_traffic_to_db():
             db.session.add(new_status)
 
         db.session.commit()
-        print(f"✅ [Traffic] {len(summary)}개 구간 업데이트 완료.")
+        print(f"[Traffic] {len(summary)}개 구간 업데이트 완료.")
 
 @bp.route('/api/traffic/now')
 def get_traffic_api():

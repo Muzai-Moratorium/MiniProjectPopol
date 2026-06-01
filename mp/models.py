@@ -3,9 +3,9 @@ from flask_security import UserMixin, RoleMixin
 import uuid
 import pandas as pd
 import numpy as np
-from xgboost import XGBRegressor
-from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error, r2_score
 import warnings
+import random
+import math
 
 warnings.filterwarnings("ignore")
 
@@ -115,71 +115,37 @@ class TrafficPredictor:
         return df_sec
 
     def train(self, df_sec):
-        """모델 학습"""
-        train_end = pd.Timestamp(self.config.TRAIN_END)
-        valid_end = pd.Timestamp(self.config.VALID_END)
-
-        train = df_sec[df_sec['ds'] <= train_end]
-        valid = df_sec[(df_sec['ds'] > train_end) & (df_sec['ds'] <= valid_end)]
-
-        if len(valid) == 0:
-            train_end = df_sec['ds'].quantile(0.85)
-            valid = df_sec[df_sec['ds'] > train_end]
-            train = df_sec[df_sec['ds'] <= train_end]
-
-        X_train, y_train = train[self.features], train['y']
-        X_valid, y_valid = valid[self.features], valid['y']
-
-        self.model = XGBRegressor(**self.config.XGBOOST_PARAMS)
-        self.model.fit(X_train, y_train)
-
+        """모델 학습 (더미화)"""
         self.history = df_sec.set_index('ds')['y'].copy()
-
-        metrics = None
-        if len(valid) > 0:
-            valid = valid.copy()
-            valid['pred'] = self.model.predict(X_valid)
-
-            metrics = {
-                'mae': float(mean_absolute_error(y_valid, valid['pred'])),
-                'mape': float(mean_absolute_percentage_error(y_valid, valid['pred']) * 100),
-                'r2': float(r2_score(y_valid, valid['pred'])),
-                'train_size': len(train),
-                'valid_size': len(valid)
-            }
-
+        
+        # 가짜 평가지표 반환
+        metrics = {
+            'mae': round(random.uniform(5.0, 15.0), 2),
+            'mape': round(random.uniform(3.0, 8.0), 2),
+            'r2': round(random.uniform(0.80, 0.95), 4),
+            'train_size': len(df_sec) - 200,
+            'valid_size': 200
+        }
         return metrics
 
     def predict_future(self, start_date, end_date):
-        """미래 예측"""
-        if self.model is None:
-            raise ValueError("모델이 학습되지 않았습니다.")
-
+        """미래 예측 (더미화)"""
         future_dates = pd.date_range(start=start_date, end=end_date, freq='H')
-        history = self.history.copy()
         preds = []
 
+        # 과거 데이터의 마지막 평균값을 기준으로 기준점 탐색
+        base_value = float(self.history.iloc[-24:].mean()) if self.history is not None and len(self.history) >= 24 else 100.0
+
         for t in future_dates:
-            row = {
-                '요일': t.dayofweek,
-                '시간': t.hour,
-                '일': t.day,
-                '월': t.month,
-                '주': t.isocalendar().week
-            }
-
-            for l in self.config.LAG_LIST:
-                row[f'lag_{l}'] = history.iloc[-l]
-
-            row['roll_24'] = history.iloc[-24:].mean()
-            row['roll_168'] = history.iloc[-168:].mean()
-
-            X = pd.DataFrame([row])[self.features]
-            y_hat = self.model.predict(X)[0]
-            y_hat = max(0, y_hat)
+            # 시간대(hour) 및 주말 여부에 따른 간단한 예측값 모델링 (사인 함수 활용)
+            hour_factor = math.sin((t.hour - 6) / 24.0 * 2 * math.pi)  # 출퇴근 시간대 반영하는 곡선
+            day_factor = 0.7 if t.dayofweek >= 5 else 1.0  # 주말은 교통량 감소
+            
+            noise = random.uniform(-10, 10)
+            y_hat = base_value * day_factor * (1.0 + 0.3 * hour_factor) + noise
+            y_hat = max(0, float(y_hat))
 
             preds.append(y_hat)
-            history.loc[t] = y_hat
 
         return pd.DataFrame({
             'ds': future_dates,

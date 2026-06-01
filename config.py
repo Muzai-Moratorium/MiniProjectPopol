@@ -1,9 +1,12 @@
+import os
+
 class Config:
     SECRET_KEY ="a1r2i3e4l5" 
     SECURITY_PASSWORD_SALT="w1h2i3t4e5"
-    # MySQL 접속 설정
-    SQLALCHEMY_DATABASE_URI = (
-        "mysql+pymysql://root:1234@localhost:3306/flask_db?charset=utf8mb4"
+    # 데이터베이스 접속 설정 (.env에 DATABASE_URL이 없으면 기본적으로 SQLite 사용)
+    SQLALCHEMY_DATABASE_URI = os.environ.get(
+        "DATABASE_URL",
+        "sqlite:///flask_db.db"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
