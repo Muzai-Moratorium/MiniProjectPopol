@@ -106,6 +106,51 @@ def sync_traffic_to_db():
         db.session.commit()
         print(f"[Traffic] {len(summary)}개 구간 업데이트 완료.")
 
+def check_and_seed_mock_traffic():
+    """Vercel이나 공공 데이터 로드 실패 시, 카카오맵 도로 표시선과 HUD 데이터가 100% 나오도록 가상 소통 데이터 주입"""
+    try:
+        if Location.query.first() is not None:
+            return # 이미 데이터가 있으면 패스
+            
+        print("[Traffic Mock] 데이터베이스가 비어 있어 모의 교통 데이터를 강제 적재합니다.")
+        mock_zones = [
+            {"name": "서울TG-판교IC", "lat": "37.3587", "lng": "127.1033", "up": "원활", "down": "서행"},
+            {"name": "판교IC-신갈JC", "lat": "37.2800", "lng": "127.1058", "up": "정체", "down": "원활"},
+            {"name": "신갈JC-수원IC", "lat": "37.2639", "lng": "127.1035", "up": "원활", "down": "원활"},
+            {"name": "수원IC-기흥IC", "lat": "37.2264", "lng": "127.1043", "up": "서행", "down": "정체"},
+            {"name": "기흥IC-기흥동탄IC", "lat": "37.2222", "lng": "127.1013", "up": "원활", "down": "원활"},
+            {"name": "기흥동탄IC-동탄JC", "lat": "37.1819", "lng": "127.0958", "up": "정체", "down": "서행"},
+            {"name": "동탄JC-오산IC", "lat": "37.1422", "lng": "127.0841", "up": "원활", "down": "원활"},
+            {"name": "오산IC-안성분기점", "lat": "37.0402", "lng": "127.1380", "up": "원활", "down": "원활"},
+            {"name": "안성분기점-안성IC", "lat": "36.9908", "lng": "127.1558", "up": "서행", "down": "원활"},
+            {"name": "서초IC-양재IC", "lat": "37.4632", "lng": "127.0420", "up": "정체", "down": "정체"},
+            {"name": "양재IC-달래내고개", "lat": "37.4336", "lng": "127.0544", "up": "서행", "down": "원활"},
+            {"name": "달래내고개-판교IC", "lat": "37.4058", "lng": "127.0945", "up": "원활", "down": "원활"}
+        ]
+        
+        for zone in mock_zones:
+            loc = Location(
+                cctv_name=zone["name"],
+                lat=zone["lat"],
+                lng=zone["lng"]
+            )
+            db.session.add(loc)
+            db.session.flush()
+            
+            status = TrafficStatus(
+                location_id=loc.id,
+                status_upstream=zone["up"],
+                status_downstream=zone["down"],
+                timestamp=datetime.now()
+            )
+            db.session.add(status)
+            
+        db.session.commit()
+        print("[Traffic Mock] 12개 주요 관제 구간 모의 적재 완료!")
+    except Exception as e:
+        print(f"[Traffic Mock Error] 모의 데이터 적재 실패: {e}")
+        db.session.rollback()
+
 @bp.route('/api/traffic/now')
 def get_traffic_api():
     # 현재 저장된 최신 데이터를 JSON으로 주는 API (필요시 사용)
@@ -116,6 +161,9 @@ def get_traffic_api():
 def get_traffic_for_map():
     """DB에서 최신 교통상태를 가져와 카카오맵용 JSON 반환"""
     from flask import jsonify
+    
+    # 🌟 Vercel 배포 시 데이터 유실 및 0개 로드 자바스크립트 오류 방지용 가상 데이터 강제 적재
+    check_and_seed_mock_traffic()
     
     results = []
     locations = Location.query.all()
