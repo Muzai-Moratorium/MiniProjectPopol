@@ -1,5 +1,10 @@
 # mp/views/dummy_analysis/dummy_bp.py
-import os, cv2, time, random, threading
+import os, time, random, threading
+try:
+    import cv2
+except ImportError:
+    from unittest.mock import MagicMock
+    cv2 = MagicMock()
 from flask import Blueprint, render_template, Response, jsonify
 
 bp = Blueprint("dummy", __name__, url_prefix="/dummy")

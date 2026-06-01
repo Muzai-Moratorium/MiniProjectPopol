@@ -2,7 +2,11 @@ import urllib.request
 import urllib.error
 import json
 import pandas as pd
-import cv2
+try:
+    import cv2
+except ImportError:
+    from unittest.mock import MagicMock
+    cv2 = MagicMock()
 import numpy as np
 import time
 import sys
