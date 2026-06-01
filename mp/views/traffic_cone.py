@@ -22,8 +22,12 @@ cone_config = {
 
 def run_cone_detection():
     global cone_config
+    # OpenCV가 MagicMock이거나 결손된 환경일 경우 스레드 루프 진입을 방지하여 무한루프 마비 현상 원천 차단
+    if isinstance(cv2, MagicMock) or cv2 is None or not hasattr(cv2, 'VideoCapture'):
+        print("[CONE] OpenCV 미설치 상태입니다. 백그라운드 감지 스레드를 정지합니다.")
+        return
+        
     print("[CONE] 스레드 시작됨") 
-    
     while True:
         if not cone_config["is_running"]:
             cone_config["cone_detected"] = False

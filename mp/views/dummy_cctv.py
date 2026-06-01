@@ -21,6 +21,12 @@ dummy_config = {
 
 def run_fire_detection():
     global dummy_config
+    # OpenCV가 MagicMock이거나 결손된 환경일 경우 스레드 진동 마비 현상 원천 차단
+    if isinstance(cv2, MagicMock) or cv2 is None or not hasattr(cv2, 'VideoCapture'):
+        print("[FIRE] OpenCV 미설치 상태입니다. 스레드를 정지합니다.")
+        dummy_config["is_running"] = False
+        return
+        
     while True:
         # 버튼이 눌린 상태(is_running == True)일 때만 분석 작동
         if not dummy_config["is_running"]:

@@ -46,7 +46,12 @@ model = None
 # ------------------------------------------------------------
 def process_wrong_way_background(video_source):
     global IS_RUNNING, IS_DETECTED, latest_frame, is_trained, init_counter, lane_direction_map, violation_history
-    
+    # OpenCV가 MagicMock이거나 결손된 환경일 경우 스레드 진동 마비 현상 원천 차단
+    if isinstance(cv2, MagicMock) or cv2 is None or not hasattr(cv2, 'VideoCapture'):
+        print("[WRONG WAY] OpenCV 미설치 상태입니다. 스레드를 조기 정지합니다.")
+        IS_RUNNING = False
+        return
+        
     cap = cv2.VideoCapture(video_source)
     is_trained = True
     init_counter = INIT_FRAMES

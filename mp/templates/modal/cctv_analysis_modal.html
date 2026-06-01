@@ -54,12 +54,11 @@
               <span class="cctv-current-name">-</span>
               <span class="header-weather">--°C</span>
             </div>
-            <div class="cctv-widget-video-wrapper">
-              <img class="cctv-widget-stream-img"
-                src=""
-                alt="실시간 교통량 분석"
-                onerror="this.onerror=null; this.src='https://placehold.co/640x360/E5E7EB/4B5563?text=연결+대기+중';"
-              />
+            <div class="cctv-widget-video-wrapper" style="position: relative; width: 100%; height: 100%; aspect-ratio: 16/9; background: #000; overflow: hidden; border-radius: 8px;">
+              <video class="cctv-widget-stream-video"
+                controls autoplay muted playsinline
+                style="width: 100%; height: 100%; object-fit: contain;"
+              ></video>
             </div>
             <div class="cctv-widget-actions">
               <button class="cctv-stop-btn cctv-widget-stop-btn">
@@ -92,6 +91,7 @@
       <img id="zoomedImage" src="" alt="확대된 이미지" />
     </div>
     <!-- 이미지 확대 오버레이 - 새로 추가된 부분 -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
     <script>
       let widgetCount = 0;
@@ -170,7 +170,8 @@
         const toggleBtn = widget.querySelector(".cctv-toggle-btn");
         const videoArea = widget.querySelector(".cctv-widget-video-area");
         const selectorArea = widget.querySelector(".cctv-selector-section");
-        const streamImg = widget.querySelector(".cctv-widget-stream-img");
+        const streamVideo = widget.querySelector(".cctv-widget-stream-video");
+        let hlsInstance = null;
         const currentNameSpan = widget.querySelector(".cctv-current-name");
         const headerWeather = widget.querySelector(".header-weather");
 
@@ -309,11 +310,21 @@
           }
         });
 
+        function stopVideo() {
+          if (hlsInstance) {
+            hlsInstance.destroy();
+            hlsInstance = null;
+          }
+          streamVideo.pause();
+          streamVideo.src = "";
+          streamVideo.load();
+        }
+
         // 닫기
         closeBtn.addEventListener("click", () => {
           videoArea.style.display = "none";
           selectorArea.style.display = "block";
-          streamImg.src = "";
+          stopVideo();
           isAnalyzing = false;
           widget.remove();
         });
@@ -321,13 +332,6 @@
         // 접기/펼치기
         toggleBtn.addEventListener("click", () => {
           widget.classList.toggle("collapsed");
-        });
-
-        // 이미지 클릭 시 확대
-        streamImg.addEventListener("click", () => {
-          if (streamImg.src && !streamImg.src.includes("placehold.co")) {
-            showZoomedImage(streamImg.src);
-          }
         });
 
         // 시작
@@ -338,27 +342,41 @@
           startBtn.textContent = "연결 중...";
 
           try {
-            const formData = new FormData();
-            formData.append("cctv_name", selectedName);
-
-            const response = await fetch("{{ url_for('traffic.index') }}", {
-              method: "POST",
-              body: formData,
-            });
-
-            const html = await response.text();
-            const doc = new DOMParser().parseFromString(html, "text/html");
-            const img = doc.querySelector(
-              'img[alt="실시간 교통량 분석 스트림"]'
-            );
-
-            if (img && img.src) {
-              videoArea.style.display = "block";
-              selectorArea.style.display = "none";
-              currentNameSpan.textContent = selectedName;
-              streamImg.src = img.src;
-              isAnalyzing = true;
+            // 백엔드로부터 진짜 실시간 프록시 CCTV HLS 주소 받아오기
+            const response = await fetch(`/traffic/get_cctv_url?name=${encodeURIComponent(selectedName)}`);
+            const data = await response.json();
+            
+            if (data.error || !data.url) {
+              throw new Error(data.error || "URL not found");
             }
+
+            const liveUrl = data.url;
+
+            videoArea.style.display = "block";
+            selectorArea.style.display = "none";
+            currentNameSpan.textContent = selectedName;
+
+            stopVideo();
+
+            if (Hls.isSupported()) {
+              hlsInstance = new Hls();
+              hlsInstance.loadSource(liveUrl);
+              hlsInstance.attachMedia(streamVideo);
+              hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+                streamVideo.play().catch(e => console.log("Auto-play blocked:", e));
+              });
+            } else if (streamVideo.canPlayType('application/vnd.apple.mpegurl')) {
+              streamVideo.src = liveUrl;
+              streamVideo.play().catch(e => console.log("Auto-play blocked:", e));
+            } else {
+              streamVideo.src = liveUrl;
+              streamVideo.play().catch(e => console.log("Auto-play blocked:", e));
+            }
+
+            isAnalyzing = true;
+          } catch (err) {
+            console.error("CCTV 로드 실패:", err);
+            alert("실시간 CCTV 영상을 가져오지 못했습니다. 잠시 후 다시 시도해 주세요.");
           } finally {
             startBtn.disabled = false;
             startBtn.textContent = "시작";
@@ -369,7 +387,7 @@
         stopBtn.addEventListener("click", () => {
           videoArea.style.display = "none";
           selectorArea.style.display = "block";
-          streamImg.src = "";
+          stopVideo();
           isAnalyzing = false;
         });
 
