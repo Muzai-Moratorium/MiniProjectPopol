@@ -97,11 +97,12 @@ def create_app():
             )
         db.session.commit()
 
-        # ⭐ 서버 시작 시 교통 데이터 동기화 (Location 테이블에 데이터 적재)
-        try:
-            sync_traffic_to_db()
-            print("[Traffic] 초기 데이터 동기화 완료!")
-        except Exception as e:
-            print(f"[Traffic Warning] 초기 동기화 실패: {e}")
+        # Vercel 환경이 아닐 때만 시작 시 데이터 동기화 시도 (타임아웃 및 불필요한 레이턴시 방지)
+        if "VERCEL" not in os.environ:
+            try:
+                sync_traffic_to_db()
+                print("[Traffic] 초기 데이터 동기화 완료!")
+            except Exception as e:
+                print(f"[Traffic Warning] 초기 동기화 실패: {e}")
 
     return app

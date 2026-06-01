@@ -7,8 +7,10 @@ import pandas as pd
 
 bp = Blueprint("weather", __name__)
 
-# 엑셀 파일 로드
-location_data = pd.read_excel('mp/static/nxny.xlsx')[['격자 X', '격자 Y', '경도(초/100)', '위도(초/100)']]
+# 엑셀 파일 절대경로 로드
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+xlsx_path = os.path.join(BASE_DIR, 'static', 'nxny.xlsx')
+location_data = pd.read_excel(xlsx_path)[['격자 X', '격자 Y', '경도(초/100)', '위도(초/100)']]
 
 # --- 기상청 base_time 보정 ---
 def get_base_time():
