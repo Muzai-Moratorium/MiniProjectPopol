@@ -3,209 +3,293 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>실시간 CCTV 도로 관제 시스템</title>
+    <title>경부선 실시간 CCTV 교통 분석</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body { 
-            font-family: 'Inter', 'Noto Sans KR', sans-serif; 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f4f7f6;
+        }
+        
+        .main-layout {
+            display: flex;
+            gap: 16px;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .video-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .video-box {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            flex: 1;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .video-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* 토글 모달 스타일 */
+        .map_toggleBtn {
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            z-index: 1000;
+            width: 300px;
+        }
+        
+        .map_toggleBtn .content {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            margin-bottom: 10px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .map_toggleBtn .content ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .map_toggleBtn .content li {
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+            color: #333;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .map_toggleBtn .content li:last-child {
+            border-bottom: none;
+        }
+        
+        .map_toggleBtn .content li:hover {
+            color: #2563eb;
+            padding-left: 8px;
+        }
+        
+        .toggle_button {
+            display: block;
+            width: 100%;
+            padding: 12px 16px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .toggle_button:hover {
+            background-color: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }
+        
+        .toggle_button:active {
+            transform: translateY(0);
+        }
+        
+        /* 제어판 스타일 */
+        .control-panel {
+            background-color: white;
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 16px;
+        }
+        
+        .control-panel form {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .control-panel label {
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+            white-space: nowrap;
+        }
+        
+        .control-panel select {
+            flex: 1;
+            min-width: 200px;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            focus:ring-2;
+            focus:ring-blue-500;
+            cursor: pointer;
+        }
+        
+        .control-panel button {
+            padding: 8px 16px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        
+        .control-panel button:hover {
+            background-color: #1d4ed8;
+        }
+        
+        .info-text {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 12px;
+        }
+        
+        .status-info {
+            color: #1f2937;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 18px;
+        }
+        
+        /* 반응형 디자인 */
+        @media (max-width: 1024px) {
+            .main-layout {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .map_toggleBtn {
+                position: static;
+                width: 100%;
+                margin-top: 20px;
+            }
+            
+            .map_toggleBtn .content {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .video-section {
+                padding: 12px;
+            }
+            
+            .map_toggleBtn {
+                width: 100%;
+            }
+            
+            .toggle_button {
+                width: 100%;
+            }
         }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
-
-    <!-- 헤더 -->
-    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between shadow-lg">
-        <div class="flex items-center gap-3">
-            <span class="text-2xl">🛣️</span>
-            <div>
-                <h1 class="text-xl font-bold text-slate-50 tracking-tight">경부고속도로 실시간 CCTV</h1>
-                <p class="text-xs text-slate-400">CCTV HLS CORS-Proxy 관제 시스템</p>
-            </div>
-        </div>
-        <div class="flex items-center gap-2 text-xs text-slate-400 bg-slate-950 px-3 py-1.5 rounded-full border border-slate-800">
-            <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            실시간 스트리밍 채널 활성화
-        </div>
-    </header>
-
-    <!-- 메인 레이아웃 -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col lg:flex-row gap-6">
-        
-        <!-- 비디오 영역 (좌측/상단) -->
-        <div class="flex-1 flex flex-col gap-4">
-            <!-- 비디오 상자 -->
-            <div class="relative bg-black rounded-2xl overflow-hidden border border-slate-800 shadow-2xl aspect-video w-full flex items-center justify-center" style="min-height: 480px;">
-                {% if target_name and target_url %}
-                    {% if is_vercel %}
-                        <!-- Vercel 운영 환경: 초경량 HLS 리라이팅 프록시 재생 -->
-                        <video id="cctv-video" class="w-full h-full object-contain" controls autoplay muted playsinline></video>
-                        <div id="video-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950 bg-opacity-90 text-slate-200 p-4 transition-all duration-300">
-                            <div class="animate-spin rounded-full h-12 w-12 border-4 border-slate-800 border-t-blue-500 mb-4"></div>
-                            <span class="font-medium text-lg text-slate-300">CCTV 비디오 연결 요청 중...</span>
-                        </div>
-                    {% else %}
-                        <!-- 로컬 개발 환경: 원래 완벽히 작동하던 OpenCV 프레임 디코더 & multipart 이미지 스트리밍 완벽 복구 -->
-                        <img src="{{ url_for('traffic.video_feed', cctv_url=target_url | urlencode) }}" 
-                             alt="실시간 교통량 분석 스트림" 
-                             class="w-full h-full object-contain"
-                             onerror="this.onerror=null; this.src='https://placehold.co/1280x720/E5E7EB/4B5563?text=스트림+로딩+중+또는+연결+실패';"
-                        >
-                    {% endif %}
-                {% else %}
-                    <div class="p-8 text-center">
-                        <div class="text-amber-500 text-5xl mb-4">⚠️</div>
-                        <h3 class="text-lg font-bold text-slate-200">조회 가능한 CCTV가 없습니다</h3>
-                        <p class="text-sm text-slate-400 mt-1">우측 패널에서 조회할 CCTV를 선택해 주십시오.</p>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- 제어 및 탐색 패널 (우측/하단) -->
-        <div class="w-full lg:w-96 flex flex-col gap-4">
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col gap-4 shadow-xl">
-                <div>
-                    <h2 class="text-sm font-semibold uppercase text-slate-400 tracking-wider">CCTV 채널 선택</h2>
-                    <p class="text-xs text-slate-500 mt-0.5">상/하행선 실시간 CCTV 관제 포트를 제공합니다.</p>
-                </div>
-
-                <form method="POST" action="{{ url_for('traffic.index') }}" class="flex flex-col gap-3">
-                    <div class="relative">
-                        <select id="cctv_select" name="cctv_name" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
-                            {% for name in cctv_names %}
-                                <option value="{{ name }}" {% if name == target_name %}selected{% endif %}>
-                                    {{ name }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
-                            ▼
-                        </div>
-                    </div>
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 transition-colors text-white py-3 rounded-xl font-semibold text-sm shadow-lg shadow-blue-900/30">
-                        CCTV 채널 연결
-                    </button>
+<body>
+    <div class="main-layout">
+        <!-- 비디오 섹션 -->
+        <div class="video-section">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4 border-b pb-2">🛣️ 경부선 실시간 CCTV 교통 분석</h1>
+            
+            <!-- 제어 패널 -->
+            <div class="control-panel">
+                <form method="POST" action="{{ url_for('traffic.index') }}">
+                    <label for="cctv_select">CCTV 선택:</label>
+                    <select id="cctv_select" name="cctv_name">
+                        {% for name in cctv_names %}
+                            <option value="{{ name }}" {% if name == target_name %}selected{% endif %}>
+                                {{ name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit">분석 시작</button>
                 </form>
-
+                
                 {% if target_name %}
-                    <div class="border-t border-slate-800 pt-4 flex flex-col gap-2">
-                        <div class="text-xs text-slate-400">현재 연결 포트</div>
-                        <div class="text-sm font-bold text-blue-400 break-all bg-slate-950 px-3 py-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
-                            <span>{{ target_name }}</span>
-                            <span class="h-2 w-2 rounded-full bg-blue-500"></span>
-                        </div>
-                        {% if is_vercel %}
-                            <p class="text-xs text-slate-500 leading-relaxed mt-1">
-                                * HLS 비디오 플레이어가 리라이팅 프록시를 통해 CORS 제한을 완벽히 격리 우회하여 안전하게 재생 중입니다.
-                            </p>
-                        {% else %}
-                            <p class="text-xs text-slate-500 leading-relaxed mt-1">
-                                * 화면 좌측 상단의 "방향 1/2"는 OpenCV 광학 흐름 분석 알고리즘에 따른 실시간 교통 소통 정보를 표시합니다.
-                            </p>
-                        {% endif %}
-                    </div>
+                    <div class="status-info">현재 분석: {{ target_name }}</div>
+                    <p class="info-text">* 화면 좌측 상단의 "방향 1/2"는 영상의 흐름 방향에 따른 교통 상태를 표시합니다.</p>
                 {% endif %}
             </div>
+            
+            <!-- 비디오 스트림 -->
+            {% if target_name and target_url %}
+                <div class="video-box">
+                    <img src="{{ url_for('traffic.video_feed', cctv_url=target_url | urlencode) }}" 
+                         alt="실시간 교통량 분석 스트림" 
+                         onerror="this.onerror=null; this.src='https://placehold.co/1280x720/E5E7EB/4B5563?text=스트림+로딩+중+또는+연결+실패';"
+                    >
+                </div>
+            {% else %}
+                <div class="video-box flex items-center justify-center bg-gray-200">
+                    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-6 rounded-lg">
+                        <p class="font-bold">CCTV 데이터를 찾을 수 없습니다.</p>
+                        <p class="text-sm">API 연결 상태를 확인하거나, CCTV 목록을 먼저 선택해주세요.</p>
+                    </div>
+                </div>
+            {% endif %}
         </div>
-    </main>
+    </div>
+    
+    <!-- 토글 모달 (고정 위치) -->
+    <div class="map_toggleBtn">
+        <div class="content">
+            <h3 style="margin-bottom: 12px; font-weight: 700; color: #1f2937;">빠른 정보</h3>
+            <ul>
+                <li>📊 교통량 분석 중</li>
+                <li>🚗 차량 감지 시스템</li>
+                <li>⚡ 실시간 스트리밍</li>
+                <li>📍 경부고속도로</li>
+                <li>🎯 광학 흐름 기반 분석</li>
+            </ul>
+        </div>
+        <button class="toggle_button">정보 보기</button>
+    </div>
 
-    <!-- 푸터 -->
-    <footer class="bg-slate-900/50 border-t border-slate-850 px-6 py-4 text-center text-xs text-slate-500">
-        &copy; 실시간 CCTV 관제 시스템. All rights reserved.
-    </footer>
-
-    <!-- 비디오 재생 통합 스크립트 -->
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script>
         $(document).ready(function () {
-            // Vercel 환경일 때만 HLS 스크립트 로드
-            const isVercel = {% if is_vercel %}true{% else %}false{% endif %};
-            if (!isVercel) return; // 로컬인 경우 <img> 태그 재생이므로 JS 생략
-
-            const targetUrl = "{% if target_url %}{{ url_for('traffic.proxy_m3u8', url=target_url) }}{% endif %}";
-            const originalUrl = "{{ target_url | safe }}";
-            const video = document.getElementById('cctv-video');
-            const overlay = document.getElementById('video-overlay');
-
-            if (video && targetUrl) {
-                video.onplaying = function() {
-                    overlay.style.display = 'none';
-                };
-
-                let tryDirectFallback = false;
-
-                function playDirect() {
-                    console.log("HLS failed, attempting direct playback fallback...");
-                    video.removeAttribute('src');
-                    video.src = originalUrl || targetUrl;
-                    video.load();
-                    video.play().then(function() {
-                        overlay.style.display = 'none';
-                    }).catch(function(e) {
-                        console.log("Direct playback also failed:", e);
-                        overlay.innerHTML = '<span class="text-red-500 font-bold text-center text-sm">실시간 CCTV 영상 로딩에 실패했습니다.<br><br>CCTV 카메라 통신 차단 또는 외부 채널 네트워크 미지원 상태입니다.</span>';
-                    });
-                }
-
-                video.onerror = function() {
-                    if (!tryDirectFallback) {
-                        tryDirectFallback = true;
-                        playDirect();
+            const $content = $(".map_toggleBtn .content");
+            const $button = $(".map_toggleBtn .toggle_button");
+            
+            // 초기 상태: 숨김
+            $content.hide();
+            
+            // 버튼 클릭 시 토글
+            $button.on("click", function () {
+                $content.slideToggle(300, function () {
+                    if ($content.is(":visible")) {
+                        $button.text("정보 숨기기");
                     } else {
-                        overlay.innerHTML = '<span class="text-red-500 font-bold text-center text-sm">CCTV 실시간 영상을 로드할 수 없습니다.</span>';
+                        $button.text("정보 보기");
                     }
-                };
-
-                if (Hls.isSupported() && (targetUrl.includes('.m3u8') || targetUrl.includes('proxy_m3u8'))) {
-                    const hls = new Hls({
-                        maxMaxBufferLength: 10,
-                        enableWorker: true,
-                        lowLatencyMode: true,
-                        manifestLoadingMaxRetry: 3,
-                        levelLoadingMaxRetry: 3
-                    });
-                    hls.loadSource(targetUrl);
-                    hls.attachMedia(video);
-                    hls.on(Hls.Events.MANIFEST_PARSED, function () {
-                        video.play().catch(function(e) {
-                            console.log("Autoplay blocked, waiting for interaction.", e);
-                        });
-                    });
-                    hls.on(Hls.Events.ERROR, function (event, data) {
-                        if (data.fatal) {
-                            switch (data.type) {
-                                case Hls.ErrorTypes.NETWORK_ERROR:
-                                    console.warn("HLS Network error, recovering...");
-                                    hls.startLoad();
-                                    break;
-                                case Hls.ErrorTypes.MEDIA_ERROR:
-                                    console.warn("HLS Media error, recovering...");
-                                    hls.recoverMediaError();
-                                    break;
-                                default:
-                                    console.error("HLS Unrecoverable error:", data);
-                                    hls.destroy();
-                                    if (!tryDirectFallback) {
-                                        tryDirectFallback = true;
-                                        playDirect();
-                                    }
-                                    break;
-                            }
-                        }
-                    });
-                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                    video.src = targetUrl;
-                    video.addEventListener('loadedmetadata', function () {
-                        video.play().catch(function(e) {
-                            console.log("Safari Autoplay blocked.", e);
-                        });
-                    });
-                } else {
-                    playDirect();
-                }
-            }
+                });
+            });
         });
     </script>
 </body>

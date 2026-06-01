@@ -1,13 +1,11 @@
-# mp/views/cctv.py
+# traffic_analysis/traffic_bp.py
 import os
 import json
+import time
 import urllib.request
 import urllib.parse
 import ssl
-import time
 from collections import deque
-import requests
-import urllib3
 try:
     import cv2
 except ImportError:
@@ -17,10 +15,7 @@ import numpy as np
 import pandas as pd
 from flask import Blueprint, render_template, request, Response
 
-# SSL 검증 경고 비활성화
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-# Blueprint 생성
+# Blueprint 객체 생성
 bp = Blueprint(
     "traffic",
     __name__,
@@ -29,10 +24,10 @@ bp = Blueprint(
     static_folder="static"
 )
 
-# 설정 및 환경변수
+# 🌐 API 범위 및 분석 상수 정의
 key = os.environ.get("CCTV_API_KEY")
-CAMERA_MOVE_THRESHOLD = 20.0
-PAUSE_DURATION = 3.0
+CAMERA_MOVE_THRESHOLD = 20.0    # 20px 이상 움직이면 카메라 이동으로 간주
+PAUSE_DURATION = 3.0            # 이동 감지 시 3초간 분석 중단
 MIN_X, MAX_X, MIN_Y, MAX_Y = 126.5, 127.6, 36.8, 37.8
 
 TARGET_CCTV_FILTERS = [
@@ -71,7 +66,7 @@ FILTERED_NAMES = []
 IS_INITIALIZED = False
 
 # ----------------------------------------------------------------------
-# 1. 로컬 환경 전용 OpenCV 분석 헬퍼 함수
+# 1. 헬퍼 함수
 # ----------------------------------------------------------------------
 def get_status_text_and_color(avg_speed, avg_occupancy):
     if avg_occupancy < OCCUPANCY_EMPTY_LIMIT:
@@ -111,7 +106,7 @@ def initialize_cctv_data():
         print(f"[Error] CCTV 초기화 실패: {e}")
 
 # ----------------------------------------------------------------------
-# 2. 로컬 환경 전용 OpenCV 비디오 프레임 제너레이터 (원형 완벽 복구)
+# 2. 비디오 프레임 제너레이터 (원형 완벽 복구)
 # ----------------------------------------------------------------------
 def generate_frames(cctv_url):
     capture = cv2.VideoCapture(cctv_url) 
@@ -219,7 +214,7 @@ def generate_frames(cctv_url):
         capture.release()
 
 # ----------------------------------------------------------------------
-# 3. 라우트 및 API
+# 3. 라우트 정의
 # ----------------------------------------------------------------------
 @bp.route('/', methods=['GET', 'POST'])
 def index():
@@ -228,80 +223,9 @@ def index():
     if not target_name and FILTERED_NAMES:
         target_name = FILTERED_NAMES[0]
     target_url = CCTV_URL_DICT.get(target_name)
-    
-    # 배포(Vercel) 환경인지 판별 플래그
-    is_vercel = "VERCEL" in os.environ
-    
-    return render_template('traffic.html', 
-                            cctv_names=FILTERED_NAMES, 
-                            target_name=target_name, 
-                            target_url=target_url, 
-                            is_vercel=is_vercel)
+    return render_template('traffic.html', cctv_names=FILTERED_NAMES, target_name=target_name, target_url=target_url)
 
 @bp.route('/video_feed/<path:cctv_url>')
 def video_feed(cctv_url):
-    """로컬 환경 전용: OpenCV 멀티파트 스트리밍"""
     decoded_url = urllib.parse.unquote(cctv_url)
     return Response(generate_frames(decoded_url), mimetype='multipart/x-mixed-replace; boundary=frame')
-
-@bp.route('/proxy_m3u8')
-def proxy_m3u8():
-    """Vercel 환경 전용 HLS 리라이팅 프록시"""
-    cctv_url = request.args.get('url')
-    if not cctv_url:
-        return "Missing url parameter", 400
-        
-    try:
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        res = requests.get(cctv_url, headers=headers, timeout=8, verify=False)
-        content_type = res.headers.get('Content-Type', '')
-        
-        parsed_url = urllib.parse.urlparse(cctv_url)
-        base_path = os.path.dirname(parsed_url.path)
-        base_url = f"{parsed_url.scheme}://{parsed_url.netloc}{base_path}"
-        
-        lines = []
-        for line in res.text.splitlines():
-            line = line.strip()
-            if line and not line.startswith('#'):
-                if not line.startswith('http://') and not line.startswith('https://'):
-                    if line.startswith('/'):
-                        line = f"{parsed_url.scheme}://{parsed_url.netloc}{line}"
-                    else:
-                        line = f"{base_url}/{line}"
-                
-                encoded_url = urllib.parse.quote(line)
-                line = f"/traffic/proxy_ts?url={encoded_url}"
-                
-            lines.append(line)
-            
-        proxied_content = "\n".join(lines)
-        response = Response(proxied_content, mimetype=content_type or 'application/vnd.apple.mpegurl')
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        return response
-    except Exception as e:
-        print(f"[Proxy Error] m3u8 중계 오류: {e}")
-        return f"Proxy Error: {str(e)}", 500
-
-@bp.route('/proxy_ts')
-def proxy_ts():
-    """Vercel 환경 전용 ts 세그먼트 중계"""
-    ts_url = request.args.get('url')
-    if not ts_url:
-        return "Missing url parameter", 400
-        
-    try:
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        res = requests.get(ts_url, headers=headers, timeout=10, verify=False, stream=True)
-        
-        def generate():
-            for chunk in res.iter_content(chunk_size=32768):
-                if chunk:
-                    yield chunk
-                    
-        response = Response(generate(), mimetype=res.headers.get('Content-Type', 'video/mp2t'))
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        return response
-    except Exception as e:
-        print(f"[Proxy Error] ts 세그먼트 중계 오류: {e}")
-        return f"Proxy Error: {str(e)}", 500

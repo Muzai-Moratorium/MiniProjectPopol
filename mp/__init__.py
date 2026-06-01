@@ -80,12 +80,14 @@ def create_app():
             )
 
         admin_user = user_datastore.find_user(email="admin@test.com")
-        if admin_user:
-            user_datastore.delete_user(admin_user)
-            db.session.commit()
-            admin_user = None
-            
         if not admin_user:
+            # mobile 유니크 충돌 방지용 중복 체크
+            mobile_num = "010-1234-5678"
+            existing_mobile = User.query.filter_by(mobile=mobile_num).first() if hasattr(User, 'mobile') else None
+            if existing_mobile:
+                # 중복 번호가 이미 일반 계정 등에 등록되어 있다면 고유 관리용 더미 번호로 대체
+                mobile_num = "010-0000-0000"
+                
             from flask_security.utils import hash_password
             from datetime import date
             user_datastore.create_user(
@@ -93,10 +95,10 @@ def create_app():
                 password=hash_password("admin1234"),
                 name="관리자",
                 birth=date(1990, 1, 1),
-                mobile="010-1234-5678",
+                mobile=mobile_num,
                 roles=[admin_role]
             )
-        db.session.commit()
+            db.session.commit()
 
         # Vercel 환경이 아닐 때만 시작 시 데이터 동기화 시도 (타임아웃 및 불필요한 레이턴시 방지)
         if "VERCEL" not in os.environ:
