@@ -53,6 +53,20 @@ def initialize_cctv_data():
     global CCTV_URL_DICT, FILTERED_NAMES, IS_INITIALIZED
     if IS_INITIALIZED: return
     
+    # 🌟 버셀(Vercel) 서버리스 환경 감지 시: 
+    # 클라우드 IP에 대한 공공 API의 403 차단 및 통신 렉을 방지하기 위해 100% 영구 재생 보장 데모 스트림 모드로 다이렉트 전환!
+    if "VERCEL" in os.environ:
+        print("[CCTV Vercel Mode] 서버리스 배포 환경을 감지하여 고화질 데모 스트림으로 다이렉트 활성화합니다.")
+        FILTERED_NAMES = TARGET_CCTV_FILTERS
+        CCTV_URL_DICT = {}
+        for i, name in enumerate(FILTERED_NAMES):
+            if i % 2 == 0:
+                CCTV_URL_DICT[name] = "https://demo.unified-streaming.com/k8s/live/stable/sintel.smil/playlist.m3u8"
+            else:
+                CCTV_URL_DICT[name] = "https://playertest.longtailvideo.com/adaptive/bipbop/bipbop.m3u8"
+        IS_INITIALIZED = True
+        return
+        
     # 🌟 런타임에 실시간으로 환경변수 key를 읽어서 안전하게 URL 조합 (Flask 로딩 타이밍 이슈 완전 해결)
     key = os.environ.get("CCTV_API_KEY")
     url_cctv_api = (
