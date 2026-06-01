@@ -86,10 +86,11 @@ def create_app():
             admin_user = None
             
         if not admin_user:
+            from flask_security.utils import hash_password
             from datetime import date
             user_datastore.create_user(
                 email="admin@test.com",
-                password="admin1234",  # Flask-Security가 내부적으로 해싱하므로 평문 전달
+                password=hash_password("admin1234"),
                 name="관리자",
                 birth=date(1990, 1, 1),
                 mobile="010-1234-5678",

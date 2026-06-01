@@ -1,23 +1,26 @@
-# traffic_analysis/traffic_bp.py
-
-from flask import Blueprint, render_template, Response, request
-import urllib.request
+# mp/views/cctv.py
 import os
-import urllib.error
 import json
-import pandas as pd
+import urllib.request
+import urllib.parse
+import ssl
+import time
+from collections import deque
+import requests
+import urllib3
 try:
     import cv2
 except ImportError:
     from unittest.mock import MagicMock
     cv2 = MagicMock()
 import numpy as np
-import time
-from collections import deque
-import sys
-import urllib.parse # URL 디코딩을 위해 추가
+import pandas as pd
+from flask import Blueprint, render_template, request, Response
 
-# Blueprint 객체 생성
+# SSL 검증 경고 비활성화
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# Blueprint 생성
 bp = Blueprint(
     "traffic",
     __name__,
@@ -26,19 +29,12 @@ bp = Blueprint(
     static_folder="static"
 )
 
-# ----------------------------------------------------------------------
-# 1. 설정 및 상수 정의
-# ----------------------------------------------------------------------
+# 설정 및 환경변수
 key = os.environ.get("CCTV_API_KEY")
-
-# --- [추가] 카메라 이동 감지 설정 ---
-CAMERA_MOVE_THRESHOLD = 20.0    # 20px 이상 움직이면 카메라 이동으로 간주
-PAUSE_DURATION = 3.0            # 이동 감지 시 3초간 분석 중단
-
-# 🌐 API 검색 범위
+CAMERA_MOVE_THRESHOLD = 20.0
+PAUSE_DURATION = 3.0
 MIN_X, MAX_X, MIN_Y, MAX_Y = 126.5, 127.6, 36.8, 37.8
 
-# CCTV 필터링 키워드
 TARGET_CCTV_FILTERS = [
     "[경부선] 서초", "[경부선] 양재", "[경부선] 원지동", "[경부선] 상적교",
     "[경부선] 달래내2", "[경부선] 달래내1", "[경부선] 금현동", "[경부선] 금토분기점1",
@@ -75,7 +71,7 @@ FILTERED_NAMES = []
 IS_INITIALIZED = False
 
 # ----------------------------------------------------------------------
-# 2. 헬퍼 함수
+# 1. 로컬 환경 전용 OpenCV 분석 헬퍼 함수
 # ----------------------------------------------------------------------
 def get_status_text_and_color(avg_speed, avg_occupancy):
     if avg_occupancy < OCCUPANCY_EMPTY_LIMIT:
@@ -95,7 +91,8 @@ def initialize_cctv_data():
     global CCTV_URL_DICT, FILTERED_NAMES, IS_INITIALIZED
     if IS_INITIALIZED: return
     try:
-        response = urllib.request.urlopen(url_cctv_api)
+        context = ssl._create_unverified_context()
+        response = urllib.request.urlopen(url_cctv_api, context=context)
         json_str = response.read().decode('utf-8')
         data_list = json.loads(json_str).get("response", {}).get("data", [])
         cctv_play = pd.json_normalize(data_list, sep=',')
@@ -114,7 +111,7 @@ def initialize_cctv_data():
         print(f"[Error] CCTV 초기화 실패: {e}")
 
 # ----------------------------------------------------------------------
-# 3. 비디오 프레임 제너레이터 (이동 감지 로직 추가)
+# 2. 로컬 환경 전용 OpenCV 비디오 프레임 제너레이터 (원형 완벽 복구)
 # ----------------------------------------------------------------------
 def generate_frames(cctv_url):
     capture = cv2.VideoCapture(cctv_url) 
@@ -125,7 +122,6 @@ def generate_frames(cctv_url):
     history_up = deque(maxlen=HISTORY_LENGTH)   
     bg_subtractor = cv2.createBackgroundSubtractorMOG2(history=500, varThreshold=40, detectShadows=False)
 
-    # ⭐ [추가] 일시정지 제어 변수
     is_paused = False
     pause_end_time = 0.0
     feature_params = dict(maxCorners=100, qualityLevel=0.3, minDistance=7, blockSize=7) 
@@ -135,11 +131,10 @@ def generate_frames(cctv_url):
 
     try:
         while capture.isOpened():
-            # ⭐ [추가] 일시정지 상태 확인
             if is_paused:
                 if time.time() > pause_end_time:
                     is_paused = False
-                    prev_frame_gray = None # 상태 초기화
+                    prev_frame_gray = None 
                     history_down.clear()
                     history_up.clear()
                     bg_subtractor = cv2.createBackgroundSubtractorMOG2(history=500, varThreshold=40, detectShadows=False)
@@ -162,7 +157,6 @@ def generate_frames(cctv_url):
             H, W = current_gray_full.shape
 
             if prev_frame_gray is not None:
-                # ⭐ [추가] 카메라 이동 감지 로직
                 p0 = cv2.goodFeaturesToTrack(prev_frame_gray, mask=None, **feature_params)
                 if p0 is not None:
                     p1, st, _ = cv2.calcOpticalFlowPyrLK(prev_frame_gray, current_gray_full, p0, None, **lk_params)
@@ -175,7 +169,6 @@ def generate_frames(cctv_url):
                                 pause_end_time = time.time() + PAUSE_DURATION
                                 continue
 
-                # --- 3. ROI 및 분석 로직 (기존 유지) ---
                 roi_y_start = int(H * ROI_Y_RATIO)
                 roi_h = H - roi_y_start
                 if weight_map is None or weight_map.shape[0] != roi_h:
@@ -184,16 +177,13 @@ def generate_frames(cctv_url):
                 roi_gray = current_gray_full[roi_y_start:, :]
                 roi_prev_gray = prev_frame_gray[roi_y_start:, :]
                 
-                # 점유율 계산
                 fg_mask = bg_subtractor.apply(roi_gray, learningRate=0.005)
                 fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)))
                 occupancy_rate = np.count_nonzero(fg_mask) / fg_mask.size
 
-                # 광학 흐름 계산
                 flow = cv2.calcOpticalFlowFarneback(roi_prev_gray, roi_gray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
                 weighted_flow_y = flow[..., 1] * weight_map
 
-                # 방향 분리 및 누적
                 mask_down = (weighted_flow_y > 0.3) 
                 speed_down = np.median(weighted_flow_y[mask_down]) if np.sum(mask_down) > 10 else 0.0
                 mask_up = (weighted_flow_y < -0.3)
@@ -229,7 +219,7 @@ def generate_frames(cctv_url):
         capture.release()
 
 # ----------------------------------------------------------------------
-# 4. Blueprint 라우트 정의 (기존 유지)
+# 3. 라우트 및 API
 # ----------------------------------------------------------------------
 @bp.route('/', methods=['GET', 'POST'])
 def index():
@@ -238,9 +228,80 @@ def index():
     if not target_name and FILTERED_NAMES:
         target_name = FILTERED_NAMES[0]
     target_url = CCTV_URL_DICT.get(target_name)
-    return render_template('traffic.html', cctv_names=FILTERED_NAMES, target_name=target_name, target_url=target_url)
+    
+    # 배포(Vercel) 환경인지 판별 플래그
+    is_vercel = "VERCEL" in os.environ
+    
+    return render_template('traffic.html', 
+                            cctv_names=FILTERED_NAMES, 
+                            target_name=target_name, 
+                            target_url=target_url, 
+                            is_vercel=is_vercel)
 
 @bp.route('/video_feed/<path:cctv_url>')
 def video_feed(cctv_url):
+    """로컬 환경 전용: OpenCV 멀티파트 스트리밍"""
     decoded_url = urllib.parse.unquote(cctv_url)
     return Response(generate_frames(decoded_url), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@bp.route('/proxy_m3u8')
+def proxy_m3u8():
+    """Vercel 환경 전용 HLS 리라이팅 프록시"""
+    cctv_url = request.args.get('url')
+    if not cctv_url:
+        return "Missing url parameter", 400
+        
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        res = requests.get(cctv_url, headers=headers, timeout=8, verify=False)
+        content_type = res.headers.get('Content-Type', '')
+        
+        parsed_url = urllib.parse.urlparse(cctv_url)
+        base_path = os.path.dirname(parsed_url.path)
+        base_url = f"{parsed_url.scheme}://{parsed_url.netloc}{base_path}"
+        
+        lines = []
+        for line in res.text.splitlines():
+            line = line.strip()
+            if line and not line.startswith('#'):
+                if not line.startswith('http://') and not line.startswith('https://'):
+                    if line.startswith('/'):
+                        line = f"{parsed_url.scheme}://{parsed_url.netloc}{line}"
+                    else:
+                        line = f"{base_url}/{line}"
+                
+                encoded_url = urllib.parse.quote(line)
+                line = f"/traffic/proxy_ts?url={encoded_url}"
+                
+            lines.append(line)
+            
+        proxied_content = "\n".join(lines)
+        response = Response(proxied_content, mimetype=content_type or 'application/vnd.apple.mpegurl')
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response
+    except Exception as e:
+        print(f"[Proxy Error] m3u8 중계 오류: {e}")
+        return f"Proxy Error: {str(e)}", 500
+
+@bp.route('/proxy_ts')
+def proxy_ts():
+    """Vercel 환경 전용 ts 세그먼트 중계"""
+    ts_url = request.args.get('url')
+    if not ts_url:
+        return "Missing url parameter", 400
+        
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        res = requests.get(ts_url, headers=headers, timeout=10, verify=False, stream=True)
+        
+        def generate():
+            for chunk in res.iter_content(chunk_size=32768):
+                if chunk:
+                    yield chunk
+                    
+        response = Response(generate(), mimetype=res.headers.get('Content-Type', 'video/mp2t'))
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response
+    except Exception as e:
+        print(f"[Proxy Error] ts 세그먼트 중계 오류: {e}")
+        return f"Proxy Error: {str(e)}", 500

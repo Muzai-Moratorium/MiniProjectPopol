@@ -1,6 +1,6 @@
 annotated-types==0.7.0
 APScheduler==3.11.2
-bcrypt==5.0.0
+bcrypt==4.2.1
 blinker==1.9.0
 certifi==2025.11.12
 cffi==2.0.0
@@ -31,7 +31,7 @@ joblib==1.5.3
 libpass==1.9.3
 MarkupSafe==3.0.3
 numpy==2.2.6
-opencv-python-headless==4.12.0.88
+# opencv-python-headless==4.12.0.88 # Vercel 50MB 서버리스 패키지 용량 초과 예방을 위해 배포 제외 (로컬 PC에는 이미 설치되어 있어 무관)
 openpyxl==3.1.5
 packaging==25.0
 pandas==2.3.3
