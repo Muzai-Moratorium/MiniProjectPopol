@@ -61,9 +61,9 @@ def initialize_cctv_data():
         CCTV_URL_DICT = {}
         for i, name in enumerate(FILTERED_NAMES):
             if i % 2 == 0:
-                CCTV_URL_DICT[name] = "https://demo.unified-streaming.com/k8s/live/stable/sintel.smil/playlist.m3u8"
+                CCTV_URL_DICT[name] = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
             else:
-                CCTV_URL_DICT[name] = "https://playertest.longtailvideo.com/adaptive/bipbop/bipbop.m3u8"
+                CCTV_URL_DICT[name] = "https://playertest.longtailvideo.com/adaptive/oceans/oceans.m3u8"
         IS_INITIALIZED = True
         return
         
@@ -109,8 +109,8 @@ def initialize_cctv_data():
     if not CCTV_URL_DICT or not FILTERED_NAMES:
         print("[CCTV Fallback Active] 데모용 라이브 스트림을 배치합니다.")
         CCTV_URL_DICT = {
-            "[실시간 데모] 수도권 교통 상황 관제 C1 (Sintel Live)": "https://demo.unified-streaming.com/k8s/live/stable/sintel.smil/playlist.m3u8",
-            "[실시간 데모] 서울 도로 소통 상황 C2 (Adaptive Live)": "https://playertest.longtailvideo.com/adaptive/bipbop/bipbop.m3u8"
+            "[실시간 데모] 수도권 교통 상황 관제 C1 (Mux HLS)": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+            "[실시간 데모] 서울 도로 소통 상황 C2 (Oceans HD)": "https://playertest.longtailvideo.com/adaptive/oceans/oceans.m3u8"
         }
         FILTERED_NAMES = list(CCTV_URL_DICT.keys())
         
@@ -130,8 +130,8 @@ def get_cctv_url():
         print(f"[CCTV Fail-safe] '{name}' 매칭 실패. 고화질 실시간 스트림으로 우회 처리합니다.")
         # 홀수/짝수 인덱스별 교차 데모 매핑으로 다채널 느낌 보존
         idx = TARGET_CCTV_FILTERS.index(name) if name in TARGET_CCTV_FILTERS else 0
-        url = "https://demo.unified-streaming.com/k8s/live/stable/sintel.smil/playlist.m3u8" if idx % 2 == 0 \
-              else "https://playertest.longtailvideo.com/adaptive/bipbop/bipbop.m3u8"
+        url = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" if idx % 2 == 0 \
+              else "https://playertest.longtailvideo.com/adaptive/oceans/oceans.m3u8"
               
     # 우리 서버의 proxy_m3u8 주소로 감싸서 반환
     proxied_url = f"/traffic/proxy_m3u8?url={urllib.parse.quote(url)}"
@@ -147,7 +147,7 @@ def index():
     
     # 🌟 메인 관제 페이지 키 매칭 실패 대비 최종 방어막
     if not target_url:
-        target_url = "https://demo.unified-streaming.com/k8s/live/stable/sintel.smil/playlist.m3u8"
+        target_url = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
     
     # ----------------------------------------------------------------------
     # 🚗 OpenCV 없이 실시간 "상/하행선 막히는지" 교통 소통 정보 분석 데이터 구성
@@ -197,7 +197,7 @@ def proxy_m3u8():
         
     try:
         # 포폴용 데모 HLS 주소는 CORS 프록시 지연 없이 다이렉트 재생하도록 302 리다이렉트 처리
-        if "demo.unified-streaming.com" in cctv_url or "playertest.longtailvideo.com" in cctv_url:
+        if "demo.unified-streaming.com" in cctv_url or "playertest.longtailvideo.com" in cctv_url or "test-streams.mux.dev" in cctv_url:
             from flask import redirect
             return redirect(cctv_url)
 
